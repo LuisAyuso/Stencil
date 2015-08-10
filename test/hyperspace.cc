@@ -57,28 +57,6 @@ TEST(Hyperspace, Split1D){
 			std::cout << e << std::endl;
 }
 
-TEST(Hyperspace, Split1D_2times){
-
-		Hyperspace<1> h (0,10,1,-1);
-		std::cout << "-" << h << std::endl;
-
-		std::cout << "split: 5" << std::endl;
-		auto n = h.split(5);
-
-		EXPECT_EQ(n.size(), 3);
-
-		std::cout << "split: 2" << std::endl;
-		std::vector<Hyperspace<1>> v;
-		for (const auto& e: n){
-			const auto& x = e.split(2);
-			v.insert(v.end(), x.begin(), x.end());	
-		}
-			
-		EXPECT_EQ(v.size(), 5);
-		for (const auto& e: v)
-			std::cout << e << std::endl;
-}
-
 TEST(Hyperspace, Split2D1){
 
 		Hyperspace<2> h (0,10, 1,-1,
@@ -169,3 +147,32 @@ TEST(Hyperspace, Split3D1){
 			std::cout << e << std::endl;
 }
 
+TEST(Hyperspace, Split_1D_Slopes){
+		Hyperspace<1> h (0, 10, 0, 0);
+
+		auto n = h.split_slopes(Hyperspace<1>::CutWithSlopes{5,1,-1});
+		
+		EXPECT_EQ(n.size(), 3);
+		for (const auto& e: n)
+			std::cout << e << std::endl;
+
+		EXPECT_EQ(n[0], Hyperspace<1>(0,5,0,-1));
+		EXPECT_EQ(n[1], Hyperspace<1>(5,10,1,0));
+		EXPECT_EQ(n[2], Hyperspace<1>(5,5,-1,1));
+
+}
+
+TEST(Hyperspace, Split_2D_Slopes){
+		Hyperspace<2> h (0, 10, 0, 0,
+						 0, 10, 0, 0);
+
+		auto n = h.split_slopes(Hyperspace<2>::CutWithSlopes{5,1,-1});
+		
+		EXPECT_EQ(n.size(), 3);
+		for (const auto& e: n)
+			std::cout << e << std::endl;
+
+		EXPECT_EQ(n[0], Hyperspace<2>(0,5,0,-1, 0, 10, 0, 0));
+		EXPECT_EQ(n[1], Hyperspace<2>(5,10,1,0, 0, 10, 0, 0));
+		EXPECT_EQ(n[2], Hyperspace<2>(5,5,-1,1, 0, 10, 0, 0));
+}

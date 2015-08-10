@@ -168,19 +168,21 @@ namespace stencil{
 		/**
 		 * 	Split dimension, one central triagle plus two inverted triangles afterwards
 		 */
-		static inline CutDim split_W(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp, int da, int db){
+		static inline CutDim split_W(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
 			CutDim res;
 
-			res.push_back(Hyp);
+			// std::cout << "W" << std::endl;
+
+			res.push_back(hyp);
 			res[0].scopes[dimension].da = -1 * da;
 			res[0].scopes[dimension].db = -1 * db;
 
-			res.push_back(Hyp);
+			res.push_back(hyp);
 			res[1].scopes[dimension].b = res[1].scopes[dimension].a;
 			res[1].step ++;
 
-			res.push_back(Hyp);
+			res.push_back(hyp);
 			res[2].scopes[dimension].a = res[2].scopes[dimension].b;
 			res[2].step ++;
 
@@ -190,17 +192,20 @@ namespace stencil{
 		/**
 		 * 	Split dimension, one two triangles, one inverted triangle afterwards
 		 */
-		static inline CutDim split_M(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp, int da, int db){
+		static inline CutDim split_M(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
 			CutDim res;
+			// std::cout << "M" << std::endl;
 
-			res.push_back(Hyp);
+			res.push_back(hyp);
 			res[0].scopes[dimension].b = split_value;
+			res[0].scopes[dimension].db = db;
 
-			res.push_back(Hyp);
+			res.push_back(hyp);
 			res[1].scopes[dimension].a = split_value;
+			res[1].scopes[dimension].da = da;
 
-			res.push_back(Hyp);
+			res.push_back(hyp);
 			res[2].scopes[dimension].a = split_value;
 			res[2].scopes[dimension].b = split_value;
 			res[2].scopes[dimension].da = -1 * da;
@@ -210,19 +215,22 @@ namespace stencil{
 			return res;
 		}
 
-		static inline CutDim split_1d(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp){
+		static inline CutDim split_1d(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
-			if (split_value <= Hyp.scopes[dimension].a) return {Hyp};
-			if (split_value >= Hyp.scopes[dimension].b) return {Hyp};
+			if (split_value == hyp.scopes[dimension].a) return {hyp};
+			if (split_value == hyp.scopes[dimension].b) return {hyp};
 
-			// if the dimension pressents a shape in inverted V we split it in M
-			if (Hyp.scopes[dimension].da >= 0 && Hyp.scopes[dimension].db <= 0) {
-				return split_M(dimension, split_value,  Hyp, Hyp.da(dimension), Hyp.db(dimension));
+			assert(split_value > hyp.scopes[dimension].a  && "nonsense split");
+			assert(split_value < hyp.scopes[dimension].b  && "nonsense split");
+
+			// if the dimension pressents a shape like an inverted V: split it in M
+			if (hyp.scopes[dimension].da >= 0 && hyp.scopes[dimension].db <= 0) {
+				return split_M(dimension, split_value,  hyp, da, db);
 			}
 
-			// if the dimension pressents a shape in V we split it in W
-			if (Hyp.scopes[dimension].da < 0 && Hyp.scopes[dimension].db > 0) {
-				return split_W(dimension, split_value,  Hyp, Hyp.da(dimension), Hyp.db(dimension));
+			// if the dimension pressents a shape like a V: split it in W
+			if (hyp.scopes[dimension].da < 0 && hyp.scopes[dimension].db > 0) {
+				return split_W(dimension, split_value,  hyp, da, db);
 			}
 
 			assert(false  && "this is not a valid geometry");
@@ -231,7 +239,7 @@ namespace stencil{
 
 		template <unsigned Dim, typename ... Cuts>
 		inline CutDim split(int cut) const{
-			return split_1d(Dim, cut, *this);
+			return split_1d(Dim, cut, *this, this->scopes[Dim].da, this->scopes[Dim].db);
 		}
 
 		template <unsigned Dim, typename ... Cuts>
@@ -241,18 +249,67 @@ namespace stencil{
 
 			CutDim res;
 			for (const auto& hyp : tmp){
-				auto x = split_1d(Dim, cut, hyp);
+				auto x = split_1d(Dim, cut, hyp, hyp.scopes[Dim].da, hyp.scopes[Dim].db);
 				res.insert(res.end(), x.begin(), x.end());
 			}
 
 			return res;
 		}
-		
+
 		template <typename ... Cuts>
 		inline CutDim split(Cuts ... cuts) const{
 
 			return split<0>(cuts...);
 		}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~ Cut with slopes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+		struct CutWithSlopes{
+			int split_value;
+			int da;
+			int db;
+		};
+
+		template <unsigned Dim, typename ... Cuts>
+		inline CutDim split_slopes(const CutWithSlopes& cut) const{
+			return split_1d(Dim, cut.split_value, *this, cut.da, cut.db);
+		}
+
+		template <unsigned Dim, typename ... Cuts>
+		inline CutDim split_slopes(const CutWithSlopes& cut, Cuts ... cuts) const{
+
+			auto tmp = split_slopes<Dim+1>(cuts...);
+
+			CutDim res;
+			for (const auto& hyp : tmp){
+				auto x = split_1d(Dim, cut.split_value, hyp, cut.da, cut.db);
+				res.insert(res.end(), x.begin(), x.end());
+			}
+
+			return res;
+		}
+
+		template <typename ... Cuts>
+		inline CutDim split_slopes(Cuts ... cuts) const{
+
+			return split_slopes<0>(cuts...);
+		}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~ comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+		bool operator == (const Hyperspace<Dimensions>& o) const{
+
+			for (int d = 0; d< Dimensions; ++d){
+				if (scopes[d].a != o.scopes[d].a || scopes[d].b != o.scopes[d].b ||
+					scopes[d].da != o.scopes[d].da || scopes[d].db != o.scopes[d].db ){
+					return false;
+				}
+			}
+			return true;
+		}
+
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ print ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -88,7 +88,7 @@ namespace {
 		struct Color_k : public Kernel<ImageSpace, 2, Life_k>{
 
 			void operator() (ImageSpace& data, unsigned i, unsigned j, unsigned t){
-				getElem(data, i, j, t+1) = t;
+				getElem(data, i, j, t+1) = t%256;
 			}
 
 			std::pair<int,int> getSlope(unsigned dimension){
@@ -105,7 +105,7 @@ int main() {
 
 	// Input problem parameters
 	CImg<unsigned char> image("../lena.png");
-	const int timeSteps = 4;
+	const int timeSteps = 40;
 	
 	assert(image.size ()  == (unsigned)image.width() *  (unsigned)image.height());
 
