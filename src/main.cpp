@@ -5,7 +5,7 @@
 #include "hyperspace.h"
 #include "kernel.h"
 #include "bufferSet.h"
-#include "rec_stencil.h"
+#include "rec_stencil2.h"
 
 #include "timer.h" 
 
@@ -35,7 +35,6 @@ namespace {
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				unsigned sum = 0;
-
 				
 				for (unsigned x = MAX(0, ((int)i)-1); x < MIN(getW(data), i+1); ++x){
 					for (unsigned y = MAX(0, ((int)j)-1); y < MIN(j+1, getH(data)); ++y){	
@@ -86,10 +85,18 @@ namespace {
 			}
 		};
 
+		struct Color_k : public Kernel<ImageSpace, 2, Life_k>{
 
+			void operator() (ImageSpace& data, unsigned i, unsigned j, unsigned t){
+				getElem(data, i, j, t+1) = t;
+			}
 
-}
+			std::pair<int,int> getSlope(unsigned dimension){
+				return {1,1};
+			}
+		};
 
+} // #######################################################################################
 
 
 #include "CImg.h"
@@ -98,9 +105,8 @@ int main() {
 
 	// Input problem parameters
 	CImg<unsigned char> image("../lena.png");
-	const int timeSteps = 50;
+	const int timeSteps = 4;
 	
-
 	assert(image.size ()  == (unsigned)image.width() *  (unsigned)image.height());
 
 
@@ -114,10 +120,11 @@ int main() {
 
 	// create kernel
 	//Blur_k kernel;
-	Life_k kernel;
+	//Life_k kernel;
+	Color_k kernel;
 	
 	std::cout << " ==== Recursive ==== " << std::endl;
-	TIME_CALL(recursive_stencil_2D( recBuffer, kernel, timeSteps));
+	TIME_CALL(recursive_stencil_2D(recBuffer, kernel, timeSteps));
 
 	// run
 	std::cout << " ==== Iterative ==== " << std::endl;
@@ -133,12 +140,11 @@ int main() {
 	};
 
 	TIME_CALL(seq());
-	
 
 	// Copy back the data and plot
 	{
-		CImg<unsigned char> recImage(recBuffer.getPointer(1), getW(recBuffer), getH(recBuffer));
-		CImg<unsigned char> parImage(parBuffer.getPointer(1), getW(parBuffer), getH(parBuffer));
+		CImg<unsigned char> recImage(recBuffer.getPointer(timeSteps%2), getW(recBuffer), getH(recBuffer));
+		CImg<unsigned char> parImage(parBuffer.getPointer(timeSteps%2), getW(parBuffer), getH(parBuffer));
 
 		CImgDisplay original(image, "original"), rec(recImage, "rec"), par(parImage, "par"); 
 

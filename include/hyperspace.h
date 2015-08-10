@@ -21,53 +21,112 @@ namespace stencil{
 		};
 
 		std::array<Scope, Dimensions> scopes;
+		unsigned step;
 
 	public:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ ORTODOX  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		Hyperspace( const Hyperspace<Dimensions>& o)
-			: scopes(o.scopes)
-			{}
+			: scopes(o.scopes), step(o.step)
+		{
+			for (auto i = 0; i < Dimensions; ++i){
+				assert(scopes[i].a <= scopes[i].b);
+				if (scopes[i].a == scopes[i].b){
+					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+				}
+			}
+		}
 
 		Hyperspace(Hyperspace<Dimensions>&& o)
-			: scopes(std::move(o.scopes))
-			{}
+			: scopes(std::move(o.scopes)), step(o.step)
+		{
+			for (auto i = 0; i < Dimensions; ++i){
+				assert(scopes[i].a <= scopes[i].b);
+				if (scopes[i].a == scopes[i].b){
+					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+				}
+			}
+		}
 
 		Hyperspace<Dimensions> operator=(const Hyperspace<Dimensions>& o){
 			scopes = o.scopes;
+			step = o.step;
+
+			for (auto i = 0; i < Dimensions; ++i){
+				assert(scopes[i].a <= scopes[i].b);
+				if (scopes[i].a == scopes[i].b){
+					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+				}
+			}
 		}
 		Hyperspace<Dimensions> operator=(Hyperspace<Dimensions>&& o){
 			std::swap(scopes, o.scopes);
+			step = o.step;
+
+			for (auto i = 0; i < Dimensions; ++i){
+				assert(scopes[i].a <= scopes[i].b);
+				if (scopes[i].a == scopes[i].b){
+					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+				}
+			}
+
 		}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spetialized ctors  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		Hyperspace( int xa, int xb, int dxa, int dxb)
-				: scopes ({Scope{xa,xb,dxa,dxb}}){
-			static_assert ( Dimensions == 1 , "this constructor is only allowed for 1D spaced");
-
+		Hyperspace( int xa, int xb, int dxa, int dxb, unsigned s=0)
+				: scopes ({Scope{xa,xb,dxa,dxb}}), step(s){
+			static_assert ( Dimensions == 1 , "this constructor is only allowed for 1D");
+			for (auto i = 0; i < Dimensions; ++i){
+				assert(scopes[i].a <= scopes[i].b);
+				if (scopes[i].a == scopes[i].b){
+					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+				}
+			}
 		}
 
 		Hyperspace( int xa, int xb, int dxa, int dxb,
-		            int ya, int yb, int dya, int dyb)
-				: scopes ({Scope{xa,xb,dxa,dxb}, Scope{ya,yb,dya,dyb}}){
-			static_assert ( Dimensions == 2 , "this constructor is only allowed for 2D spaced");
+		            int ya, int yb, int dya, int dyb, unsigned s=0)
+				: scopes ({Scope{xa,xb,dxa,dxb}, Scope{ya,yb,dya,dyb}}), step(s){
+			static_assert ( Dimensions == 2 , "this constructor is only allowed for 2D");
+			for (auto i = 0; i < Dimensions; ++i){
+				assert(scopes[i].a <= scopes[i].b);
+				if (scopes[i].a == scopes[i].b){
+					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+				}
+			}
 		}
 
 		Hyperspace( int xa, int xb, int dxa, int dxb,
 		            int ya, int yb, int dya, int dyb,
-		            int za, int zb, int dza, int dzb)
-				: scopes ({Scope{xa,xb,dxa,dxb}, Scope{ya,yb,dya,dyb}, Scope{za,zb,dza,dzb}}){
-			static_assert ( Dimensions == 2 , "this constructor is only allowed for 3D spaced");
+		            int za, int zb, int dza, int dzb, unsigned s=0)
+				: scopes ({Scope{xa,xb,dxa,dxb}, Scope{ya,yb,dya,dyb}, Scope{za,zb,dza,dzb}}), step(s){
+			static_assert ( Dimensions == 2 , "this constructor is only allowed for 3D");
+			for (auto i = 0; i < Dimensions; ++i){
+				assert(scopes[i].a <= scopes[i].b);
+				if (scopes[i].a == scopes[i].b){
+					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+				}
+			}
 		}
 
 		Hyperspace(std::array<int, Dimensions> a,
 				   std::array<int, Dimensions> b,
-				   std::array<int,      Dimensions> da,
-				   std::array<int,      Dimensions> db) { 
+				   std::array<int, Dimensions> da,
+				   std::array<int, Dimensions> db, 
+				   unsigned s=0) 
+				: step(s){ 
+
 			for (int i = 0; i< Dimensions; ++i)
 				scopes[i] = {a[i], b[i], da[i], db[i]};
+
+			for (auto i = 0; i < Dimensions; ++i){
+				assert(scopes[i].a <= scopes[i].b);
+				if (scopes[i].a == scopes[i].b){
+					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+				}
+			}
 		}
 
 
@@ -106,41 +165,76 @@ namespace stencil{
 
 		typedef std::vector<Hyperspace<Dimensions>> CutDim;
 
-		CutDim split_1d(unsigned dimension, int split_v, const Hyperspace<Dimensions>& Hyp)const{
+		/**
+		 * 	Split dimension, one central triagle plus two inverted triangles afterwards
+		 */
+		static inline CutDim split_W(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp){
 
-			if (split_v == scopes[dimension].a) return {Hyp};
-			if (split_v == scopes[dimension].b) return {Hyp};
+			CutDim res;
 
-			auto left = Hyp;
-			assert(left.scopes[dimension].b > split_v);
-			left.scopes[dimension].b = split_v;
-			assert(left.scopes[dimension].a < left.scopes[dimension].b);
+			res.push_back(Hyp);
+			res[0].scopes[dimension].da = -1 * res[0].scopes[dimension].da;
+			res[0].scopes[dimension].db = -1 * res[0].scopes[dimension].db;
 
-			auto right = Hyp;
-			assert(right.scopes[dimension].a < split_v);
-			right.scopes[dimension].a = split_v;
-			assert(right.scopes[dimension].a < right.scopes[dimension].b);
+			res.push_back(Hyp);
+			res[1].scopes[dimension].b = res[1].scopes[dimension].a;
+			res[1].step ++;
 
-			auto inverted = Hyp;
-			inverted.scopes[dimension].a = split_v;
-			inverted.scopes[dimension].b = split_v;
-			inverted.scopes[dimension].da = -1 * inverted.scopes[dimension].da;
-			inverted.scopes[dimension].db = -1 * inverted.scopes[dimension].db;
+			res.push_back(Hyp);
+			res[2].scopes[dimension].a = res[2].scopes[dimension].b;
+			res[2].step ++;
 
-			return {left, right, inverted};
+			return res;
+		}
+
+		/**
+		 * 	Split dimension, one two triangles, one inverted triangle afterwards
+		 */
+		static inline CutDim split_M(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp){
+
+			CutDim res;
+
+			res.push_back(Hyp);
+			res[0].scopes[dimension].b = split_value;
+
+			res.push_back(Hyp);
+			res[1].scopes[dimension].a = split_value;
+
+			res.push_back(Hyp);
+			res[2].scopes[dimension].a = split_value;
+			res[2].scopes[dimension].b = split_value;
+			res[2].scopes[dimension].da = -1 * res[2].scopes[dimension].da;
+			res[2].scopes[dimension].db = -1 * res[2].scopes[dimension].db;
+			res[2].step ++;
+
+			return res;
+		}
+
+		static inline CutDim split_1d(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp){
+
+			if (split_value <= Hyp.scopes[dimension].a) return {Hyp};
+			if (split_value >= Hyp.scopes[dimension].b) return {Hyp};
+
+			// if the dimension pressents a shape in inverted V we split it in M
+			if (Hyp.scopes[dimension].da >= 0 && Hyp.scopes[dimension].db <= 0) return split_M(dimension, split_value,  Hyp);
+			// if the dimension pressents a shape in V we split it in W
+			if (Hyp.scopes[dimension].da < 0 && Hyp.scopes[dimension].db > 0) return split_W(dimension, split_value,  Hyp);
+
+			assert(false  && "this is not a valid geometry");
+			return {};
 		}
 
 		template <unsigned Dim, typename ... Cuts>
-		CutDim split(int cut) const{
+		inline CutDim split(int cut) const{
 			return split_1d(Dim, cut, *this);
 		}
 
 		template <unsigned Dim, typename ... Cuts>
-		CutDim split(int cut, Cuts ... cuts) const{
+		inline CutDim split(int cut, Cuts ... cuts) const{
 
 			auto tmp = split<Dim+1>(cuts...);
-			CutDim res;
 
+			CutDim res;
 			for (const auto& hyp : tmp){
 				auto x = split_1d(Dim, cut, hyp);
 				res.insert(res.end(), x.begin(), x.end());
@@ -150,7 +244,7 @@ namespace stencil{
 		}
 		
 		template <typename ... Cuts>
-		CutDim split( Cuts ... cuts) const{
+		inline CutDim split(Cuts ... cuts) const{
 
 			return split<0>(cuts...);
 		}
@@ -161,8 +255,9 @@ namespace stencil{
 
 			out << "Hyp";
 			for (const auto& s : scopes) {
-				out << "[" << s.a << "," << s.b << "](" << s.da << "," << s.db << ")";	
+				out << "[" << s.a << "," << s.b << "](" << s.da << "," << s.db << ")";
 			}
+			out << " p(" << step << ")";	
 			return out;
 		}
 		

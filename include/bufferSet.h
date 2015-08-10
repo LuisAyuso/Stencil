@@ -74,7 +74,7 @@ namespace stencil{
 
 		#define FOR_DIMENSION(N) \
 			template<typename E, unsigned D, unsigned C>\
-			typename std::enable_if< is_eq<D, N>::value, E&>::type
+			inline typename std::enable_if< is_eq<D, N>::value, E&>::type
 
 		FOR_DIMENSION(1) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned t = 0){
 			assert(i<b.dimensions[0] && "i out of range");
@@ -98,7 +98,7 @@ namespace stencil{
 
 		#define FROM_DIMENSION(N) \
 			template<typename E, unsigned D, unsigned C>\
-			typename std::enable_if< is_ge<D, N>::value, int>::type
+			inline typename std::enable_if< is_ge<D, N>::value, int>::type
 
 		FROM_DIMENSION(1) getW(BufferSet<E,D,C>& b){
 			return b.dimensions[0];

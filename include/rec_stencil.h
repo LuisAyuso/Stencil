@@ -13,13 +13,15 @@ namespace stencil{
 	typedef Hyperspace<2> Zoid;
 
 	template <typename DataStorage, typename Kernel>
-	void recursive_stencil_2D_aux(DataStorage& data, Kernel k, const Zoid& z, unsigned t0, unsigned t1){
+	void recursive_stencil_2D_aux(DataStorage& data, Kernel k, const Zoid& z, int t0, int t1){
 
 		static_assert( Kernel::dimensions == 2, "not implemented for anything else yet");
 
-//		std::cout << "compute: " << z << std::endl;
+		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
 
 		auto deltaT = (int)t1-t0;
+		assert(t1 >= t0);
+		assert(deltaT >= 0);
 
 		// Spatial cut
 	
@@ -30,15 +32,11 @@ namespace stencil{
         auto deltaX = MAX(xb - xa, (xb + dxb * deltaT) - (xa + dxa * deltaT));
 		auto slopeX = k.getSlope(0);
 
-			assert(xa <= 512);
-			assert(xb <= 512);
-
 		auto splitX = xa;
 		if (deltaX >= 2*(ABS(slopeX.first)+ABS(slopeX.second))*deltaT){
 			splitX = xa + deltaX/2;
 		}
 	
-
 		auto ya  = z.a(1);
 		auto yb  = z.b(1);
 		auto dya = z.da(1);
@@ -46,23 +44,20 @@ namespace stencil{
         auto deltaY = MAX(yb - ya, (yb + dyb * deltaT) - (ya + dya * deltaT));
 		auto slopeY = k.getSlope(1);
 
-			assert(xa <= 512);
-			assert(xb <= 512);
-
 		auto splitY = ya;
 		if (deltaY >= 2*(ABS(slopeY.first)+ABS(slopeY.second))*deltaT){
 			splitY = ya + deltaY/2;
 		}
 
-
-	//	std::cout << deltaX << " : " << deltaY << std::endl;
-	//	std::cout << splitX <<  " : " << splitY << std::endl;
+		//std::cout << "x " << xa << " : " << xb << std::endl;
+		//std::cout << "y " << ya << " : " << yb << std::endl;
+		//std::cout << "delta " << deltaX << " : " << deltaY << std::endl;
+		//std::cout << "split " << splitX <<  " : " << splitY << std::endl;
 
 		auto zoids = z.split(splitX, splitY);
 
 	//	for (auto subZoid : zoids){
 	//		std::cout << " - " << subZoid << std::endl;
-	//	}
 
 		// spatial cut worked, recurse
 		if (zoids.size() > 1){
@@ -71,11 +66,14 @@ namespace stencil{
 			}
 		}
 		// Time cut
-		else if (deltaT > 40){
+		else if (deltaT > 1 && deltaX > 0  && deltaY > 0){
 
-			recursive_stencil_2D_aux(data, k, z, t0, deltaT/2);
-			Hyperspace<2> upZoid ({xa+dxa*deltaT, ya+dya*deltaT}, {xb, yb}, {dxa, dya}, {dxb, dyb});
-			recursive_stencil_2D_aux(data, k, upZoid, deltaT/2 , t1);
+			auto halfTime = deltaT/2;
+
+			recursive_stencil_2D_aux(data, k, z, t0, t0+halfTime);
+			Hyperspace<2> upZoid ({xa+dxa*halfTime, ya+dya*halfTime}, 
+								  {xb+dxb*halfTime, yb+dyb*halfTime}, {dxa, dya}, {dxb, dyb});
+			recursive_stencil_2D_aux(data, k, upZoid, t0+halfTime , t1);
 
 		}
 		// Base case
@@ -88,9 +86,9 @@ namespace stencil{
 			int ja = z.a(1);
 			int jb = z.b(1);
 
-			for (unsigned t = t0; t < t1; ++t){
-				for (unsigned i = ia; i < ib; ++i){
-					for (unsigned j = ja; j < jb; ++j){
+			for (int t = t0; t < t1; ++t){
+				for (int i = ia; i < ib; ++i){
+					for (int j = ja; j < jb; ++j){
 						k(data, i, j, t);
 					}
 				}
@@ -117,12 +115,12 @@ namespace stencil{
 			rightSlopes[d] = -x.second;
 		}
 
-		Hyperspace<2> z ({0,0}, {getW(data),getH(data)}, leftSlopes, rightSlopes );
+		unsigned w = getW(data), h = getH(data);
 
-		// Hit it!
+		Hyperspace<2> z ({0,0}, {w,h}, leftSlopes, rightSlopes );
+
+		// central piramid!
 		recursive_stencil_2D_aux(data, k, z, 0, t);
 	}
-
-
 
 } // stencil namespace

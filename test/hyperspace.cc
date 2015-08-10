@@ -4,6 +4,7 @@
 
 using namespace stencil;
 
+
 TEST(Hyperspace, Constructor){
 
 	{
@@ -53,6 +54,28 @@ TEST(Hyperspace, Split1D){
 		EXPECT_EQ(n.size(), 3);
 
 		for (const auto& e: n)
+			std::cout << e << std::endl;
+}
+
+TEST(Hyperspace, Split1D_2times){
+
+		Hyperspace<1> h (0,10,1,-1);
+		std::cout << "-" << h << std::endl;
+
+		std::cout << "split: 5" << std::endl;
+		auto n = h.split(5);
+
+		EXPECT_EQ(n.size(), 3);
+
+		std::cout << "split: 2" << std::endl;
+		std::vector<Hyperspace<1>> v;
+		for (const auto& e: n){
+			const auto& x = e.split(2);
+			v.insert(v.end(), x.begin(), x.end());	
+		}
+			
+		EXPECT_EQ(v.size(), 5);
+		for (const auto& e: v)
 			std::cout << e << std::endl;
 }
 
@@ -108,9 +131,21 @@ TEST(Hyperspace, Split_Edge){
 			std::cout << e << std::endl;
 }
 
+TEST(Hyperspace, Split_2D_problem){
+		Hyperspace<2> h ({13,3},{19,7},{-1,1},{1,-1});
+
+		std::cout << "-" << h << std::endl;
+		std::cout << "split: 18,3" << std::endl;
+		auto n = h.split(16,3);
+
+		EXPECT_EQ(n.size(), 3);
+		for (const auto& e: n)
+			std::cout << e << std::endl;
+}
 
 
 TEST(Hyperspace, Split3D3){
+
 		Hyperspace<3> h ({0,0,0},{10,10,10},{1,1,1},{-1,-1,-1});
 
 		std::cout << "-" << h << std::endl;
