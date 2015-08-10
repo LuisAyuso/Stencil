@@ -9,6 +9,12 @@
 
 namespace stencil{
 
+	struct CutWithSlopes{
+		int split_value;
+		int da;
+		int db;
+	};
+
 
 	template <unsigned Dimensions>
 	class Hyperspace : public utils::Printable{
@@ -172,11 +178,12 @@ namespace stencil{
 
 			CutDim res;
 
-			// std::cout << "W" << std::endl;
+			//std::cout << "W " << split_value << "  " << da << ":" << db << std::endl;
+			//std::cout << hyp << std::endl;
 
 			res.push_back(hyp);
-			res[0].scopes[dimension].da = -1 * da;
-			res[0].scopes[dimension].db = -1 * db;
+			res[0].scopes[dimension].da = da;
+			res[0].scopes[dimension].db = db;
 
 			res.push_back(hyp);
 			res[1].scopes[dimension].b = res[1].scopes[dimension].a;
@@ -195,7 +202,7 @@ namespace stencil{
 		static inline CutDim split_M(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
 			CutDim res;
-			// std::cout << "M" << std::endl;
+			//std::cout << "M " << split_value << "  " << da << ":" << db << std::endl;
 
 			res.push_back(hyp);
 			res[0].scopes[dimension].b = split_value;
@@ -229,8 +236,8 @@ namespace stencil{
 			}
 
 			// if the dimension pressents a shape like a V: split it in W
-			if (hyp.scopes[dimension].da < 0 && hyp.scopes[dimension].db > 0) {
-				return split_W(dimension, split_value,  hyp, da, db);
+			if (hyp.scopes[dimension].da < 0 || hyp.scopes[dimension].db > 0) {
+				return split_W(dimension, split_value, hyp, -hyp.scopes[dimension].da, -hyp.scopes[dimension].db);
 			}
 
 			assert(false  && "this is not a valid geometry");
@@ -264,12 +271,6 @@ namespace stencil{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~ Cut with slopes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		struct CutWithSlopes{
-			int split_value;
-			int da;
-			int db;
-		};
-
 		template <unsigned Dim, typename ... Cuts>
 		inline CutDim split_slopes(const CutWithSlopes& cut) const{
 			return split_1d(Dim, cut.split_value, *this, cut.da, cut.db);
@@ -295,9 +296,7 @@ namespace stencil{
 			return split_slopes<0>(cuts...);
 		}
 
-
 // ~~~~~~~~~~~~~~~~~~~~~~~ comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 		bool operator == (const Hyperspace<Dimensions>& o) const{
 

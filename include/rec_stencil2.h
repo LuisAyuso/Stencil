@@ -74,12 +74,14 @@ namespace stencil{
 				splitY = ya + (yb - ya)/2;
 			}
 
-			// std::cout << " x " << xa << " : " << xb << std::endl;
-			// std::cout << " y " << ya << " : " << yb << std::endl;
-			// std::cout << " delta " << deltaX << " : " << deltaY << std::endl;
-			// std::cout << " split " << splitX <<  " : " << splitY << std::endl;
+			//std::cout << " x " << xa << " : " << xb << std::endl;
+			//std::cout << " slopeX " << slopeX.first << " : " << slopeX.second << std::endl;
+			//std::cout << " y " << ya << " : " << yb << std::endl;
+			//std::cout << " slopeY " << slopeY.first << " : " << slopeY.second << std::endl;
+			//std::cout << " delta " << deltaX << " : " << deltaY << std::endl;
+			//std::cout << " split " << splitX <<  " : " << splitY << std::endl;
 
-			auto zoids = z.split(splitX, splitY);
+			auto zoids = z.split_slopes(CutWithSlopes{splitX, slopeX.first, slopeX.second}, CutWithSlopes{splitY, slopeY.first, slopeY.second});
 
 			//if (zoids.size() > 1){
 			//	std::cout << "spatial cut: " << z << std::endl;
@@ -94,12 +96,12 @@ namespace stencil{
 			}
 			// Time cut
 			else { // if (deltaT > 1 && deltaX > 0  && deltaY > 0){
-			//	std::cout << "time cut: " << z << " from " << t0 << " to " << t1 <<std::endl;
+				//std::cout << "time cut: " << z << " from " << t0 << " to " << t1 <<std::endl;
 
 				int halfTime = deltaT/2;
 				assert(halfTime >= 1);
 
-			//	std::cout << " " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;
+				//std::cout << " " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;
 				recursive_stencil_2D_aux(data, k, z, t0, t0+halfTime);
 				Hyperspace<2> upZoid ({xa+dxa*halfTime, ya+dya*halfTime}, 
 									  {xb+dxb*halfTime, yb+dyb*halfTime}, 
@@ -107,7 +109,7 @@ namespace stencil{
 									  {dxb, dyb});
 
 
-			//	std::cout << " " << upZoid << " from " << t0+halfTime << " to " << t1 <<std::endl;
+				//std::cout << " " << upZoid << " from " << t0+halfTime << " to " << t1 <<std::endl;
 				recursive_stencil_2D_aux(data, k, upZoid, t0+halfTime , t1);
 
 			}
@@ -117,7 +119,6 @@ namespace stencil{
 
 	template <typename DataStorage, typename Kernel>
 	void recursive_stencil_2D(DataStorage& data, Kernel k, unsigned t){
-		
 
 		std::array<int, Kernel::dimensions> leftSlopes;
 		std::array<int, Kernel::dimensions> rightSlopes;
@@ -125,7 +126,7 @@ namespace stencil{
 		for (int d = 0; d < Kernel::dimensions; ++d){
 			const auto& x = k.getSlope(d);
 			leftSlopes[d] = x.first;
-			rightSlopes[d] = -x.second;
+			rightSlopes[d] = x.second;
 		}
 
 		// well, if the time steps are larger that one full piramid, them we 
@@ -133,7 +134,7 @@ namespace stencil{
 
 		int w = getW(data), h = getH(data);
 
-		Hyperspace<2> z ({0,0}, {w,h}, leftSlopes, rightSlopes );
+		Hyperspace<2> z ({0,0}, {w,h}, {0,0}, {0,0} );
 
 		// central piramid!
 		recursive_stencil_2D_aux(data, k, z, 0, t);

@@ -31,6 +31,30 @@ namespace {
 
 		struct Blur_k : public Kernel<ImageSpace, 2, Blur_k>{
 
+		//	int Kcoeff[3][3];
+
+		//	Blur_k () {
+		//		double[] kernel = new double[radius * 2 + 1];
+		//		double twoRadiusSquaredRecip = 1.0 / (2.0 * radius * radius);
+		//		double sqrtTwoPiTimesRadiusRecip = 1.0 / (sqrt(2.0 * Math.PI) * radius);
+		//		double radiusModifier = 1.0;
+
+		//		int r = -radius;
+		//		for (int i = 0; i < kernel.Length; i++)
+		//		{
+		//			double x = r * radiusModifier;
+		//			x *= x;
+		//			kernel[i] =
+		//			sqrtTwoPiTimesRadiusRecip * Exp(-x * sqrtTwoPiTimesRadiusRecip);
+		//			r++;
+		//			}
+
+		//		double div = Sum(kernel);
+		//		for (int i = 0; i < kernel.Length; i++) {
+		//			kernel[i] /= div;
+		//		}
+		//	}
+
 			void operator() (ImageSpace& data, unsigned i, unsigned j, unsigned t){
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
@@ -39,10 +63,14 @@ namespace {
 				for (unsigned x = MAX(0, ((int)i)-1); x < MIN(getW(data), i+1); ++x){
 					for (unsigned y = MAX(0, ((int)j)-1); y < MIN(j+1, getH(data)); ++y){	
 
+
+						
+						
+
 				//		std::cout << "(" << x << "," << y << ")" << "(" << i << "," << j << ")" << std::endl;
 						auto e = getElem(data, x, y, t);
-						if (x != i || y != j) e = e*0.02;
-						if (x == i || y == j) e = e*0.9;
+						if (x != i || y != j) e = e*0.05;
+						if (x == i || y == j) e = e*0.02;
 						sum += e;
 					}
 				}
@@ -51,7 +79,7 @@ namespace {
 			}
 
 			std::pair<int,int> getSlope(unsigned dimension){
-				return {1,1};
+				return {1,-1};
 			}
 		};
 
@@ -81,7 +109,7 @@ namespace {
 			}
 
 			std::pair<int,int> getSlope(unsigned dimension){
-				return {1,1};
+				return {1,-1};
 			}
 		};
 
@@ -92,7 +120,7 @@ namespace {
 			}
 
 			std::pair<int,int> getSlope(unsigned dimension){
-				return {1,1};
+				return {1,-1};
 			}
 		};
 
@@ -105,7 +133,7 @@ int main() {
 
 	// Input problem parameters
 	CImg<unsigned char> image("../lena.png");
-	const int timeSteps = 40;
+	const int timeSteps = 20;
 	
 	assert(image.size ()  == (unsigned)image.width() *  (unsigned)image.height());
 
@@ -119,9 +147,9 @@ int main() {
 	assert(image.size () == recBuffer.getSize());
 
 	// create kernel
-	//Blur_k kernel;
+	Blur_k kernel;
 	//Life_k kernel;
-	Color_k kernel;
+	//Color_k kernel;
 	
 	std::cout << " ==== Recursive ==== " << std::endl;
 	TIME_CALL(recursive_stencil_2D(recBuffer, kernel, timeSteps));
