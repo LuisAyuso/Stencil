@@ -168,13 +168,13 @@ namespace stencil{
 		/**
 		 * 	Split dimension, one central triagle plus two inverted triangles afterwards
 		 */
-		static inline CutDim split_W(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp){
+		static inline CutDim split_W(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp, int da, int db){
 
 			CutDim res;
 
 			res.push_back(Hyp);
-			res[0].scopes[dimension].da = -1 * res[0].scopes[dimension].da;
-			res[0].scopes[dimension].db = -1 * res[0].scopes[dimension].db;
+			res[0].scopes[dimension].da = -1 * da;
+			res[0].scopes[dimension].db = -1 * db;
 
 			res.push_back(Hyp);
 			res[1].scopes[dimension].b = res[1].scopes[dimension].a;
@@ -190,7 +190,7 @@ namespace stencil{
 		/**
 		 * 	Split dimension, one two triangles, one inverted triangle afterwards
 		 */
-		static inline CutDim split_M(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp){
+		static inline CutDim split_M(unsigned dimension, int split_value, const Hyperspace<Dimensions>& Hyp, int da, int db){
 
 			CutDim res;
 
@@ -203,8 +203,8 @@ namespace stencil{
 			res.push_back(Hyp);
 			res[2].scopes[dimension].a = split_value;
 			res[2].scopes[dimension].b = split_value;
-			res[2].scopes[dimension].da = -1 * res[2].scopes[dimension].da;
-			res[2].scopes[dimension].db = -1 * res[2].scopes[dimension].db;
+			res[2].scopes[dimension].da = -1 * da;
+			res[2].scopes[dimension].db = -1 * db;
 			res[2].step ++;
 
 			return res;
@@ -216,9 +216,14 @@ namespace stencil{
 			if (split_value >= Hyp.scopes[dimension].b) return {Hyp};
 
 			// if the dimension pressents a shape in inverted V we split it in M
-			if (Hyp.scopes[dimension].da >= 0 && Hyp.scopes[dimension].db <= 0) return split_M(dimension, split_value,  Hyp);
+			if (Hyp.scopes[dimension].da >= 0 && Hyp.scopes[dimension].db <= 0) {
+				return split_M(dimension, split_value,  Hyp, Hyp.da(dimension), Hyp.db(dimension));
+			}
+
 			// if the dimension pressents a shape in V we split it in W
-			if (Hyp.scopes[dimension].da < 0 && Hyp.scopes[dimension].db > 0) return split_W(dimension, split_value,  Hyp);
+			if (Hyp.scopes[dimension].da < 0 && Hyp.scopes[dimension].db > 0) {
+				return split_W(dimension, split_value,  Hyp, Hyp.da(dimension), Hyp.db(dimension));
+			}
 
 			assert(false  && "this is not a valid geometry");
 			return {};
