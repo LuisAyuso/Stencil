@@ -167,6 +167,19 @@ namespace stencil{
 		return scopes[dimension].db;
 	}
 
+	int& a(int dimension){
+		return scopes[dimension].a;
+	}
+	int& b(int dimension){
+	     return scopes[dimension].b;
+	}
+	int& da(int dimension){
+	     return scopes[dimension].da;
+	}
+	int& db(int dimension){
+		return scopes[dimension].db;
+	}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spliting tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		typedef std::vector<Hyperspace<Dimensions>> CutDim;
@@ -268,7 +281,7 @@ namespace stencil{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~ Cut with slopes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		template <unsigned Dim, typename ... Cuts>
+		template <unsigned Dim >
 		inline CutDim split_slopes(const CutWithSlopes& cut) const{
 			return split_1d(Dim, cut.split_value, *this, cut.da, cut.db);
 		}

@@ -5,7 +5,7 @@
 #include "hyperspace.h"
 #include "kernel.h"
 #include "bufferSet.h"
-#include "rec_stencil.h"
+#include "rec_stencil2.h"
 
 #include "timer.h" 
 
@@ -159,10 +159,10 @@ int main(int argc, char *argv[]) {
 
 	// Input problem parameters
 	//CImg<unsigned char> image("../emo.jpg");
-	CImg<unsigned char> image("../lena.png");
+	//CImg<unsigned char> image("../lena.png");
 	//CImg<unsigned char> image("../emo.jpg");
-	//CImg<unsigned char> image("../yoBW.png");
-	const int timeSteps = 1000;
+	CImg<unsigned char> image("../yoBW.png");
+	const int timeSteps = 100;
 	
 	assert(image.size ()  == (unsigned)image.width() *  (unsigned)image.height());
 
