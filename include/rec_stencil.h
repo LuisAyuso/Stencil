@@ -22,10 +22,8 @@ namespace stencil{
 	 *			 other case : time cut
 	*/
 				
-	template <typename DataStorage, typename Kernel>
-	void recursive_stencil_2D_aux(DataStorage& data, Kernel k, const Zoid& z, int t0, int t1){
-
-		static_assert( Kernel::dimensions == 2, "not implemented for anything else yet");
+	template <typename DataStorage, typename Kernel, unsigned Dim>
+	void recursive_stencil_aux(DataStorage& data, Kernel k, const Zoid& z, int t0, int t1){
 
 		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
 
@@ -34,9 +32,10 @@ namespace stencil{
 		assert(deltaT >= 0);
 
 		// BASE CASE
-		if (deltaT <= 20){
+		if (deltaT == 1){
 
-			for (int t = t0; t < t1; ++t){
+			int t = t0;
+	//		for (int t = t0; t < t1; ++t){
 				int ia = z.a(0);
 				int ib = z.b(0);
 				int ja = z.a(1);
@@ -47,57 +46,46 @@ namespace stencil{
 						k(data, i, j, t);
 					}
 				}
-				ia += z.da(0);
-				ib += z.db(0);
-				ja += z.da(1);
-				jb += z.db(1);
-			}
+	//			ia += z.da(0);
+	//			ib += z.db(0);
+	//			ja += z.da(1);
+	//			jb += z.db(1);
+	//		}
 		}
 		
 		else{
+
+			//std::cout << z << " from " << t0 << " to " << t1 << " in dim: " << Dim << std::endl;
 	
-			auto xa  = z.a(0);
-			auto xb  = z.b(0);
-			auto dxa = z.da(0);
-			auto dxb = z.db(0);
-			auto deltaX = MAX(xb - xa, (xb + dxb * deltaT) - (xa + dxa * deltaT));
-			auto slopeX = k.getSlope(0);
+			auto a  = z.a(Dim);
+			auto b  = z.b(Dim);
+			auto da = z.da(Dim);
+			auto db = z.db(Dim);
+			auto deltaDim = MAX(b - a, (b + db * deltaT) - (a + da * deltaT));
+			auto slopeDim = k.getSlope(Dim);
 
-			auto splitX = xa;
-			if ((deltaX >= 2*(ABS(slopeX.first)+ABS(slopeX.second))*deltaT +20)){
-				splitX = xa + (xb - xa)/2;
+			auto split = a;
+			if ((deltaDim >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT)){
+				split = a + (b - a)/2;
 			}
+
+			//std::cout << " a:" << a << " b: "<< b << " da:" << da << " db:" << db << std::endl;
+			//std::cout << " deltaDim:" << deltaDim << " deltaT:" << deltaT<< std::endl;
+			//std::cout << " split:" << split << std::endl;
+
+			auto zoids = z.split_slopes<Dim> (CutWithSlopes{split, slopeDim.first, slopeDim.second});
 		
-			auto ya  = z.a(1);
-			auto yb  = z.b(1);
-			auto dya = z.da(1);
-			auto dyb = z.db(1);
-			auto deltaY = MAX(yb - ya, (yb + dyb * deltaT) - (ya + dya * deltaT));
-			auto slopeY = k.getSlope(1);
-
-			auto splitY = ya;
-			if ((deltaY >= 2*(ABS(slopeY.first)+ABS(slopeY.second))*deltaT +20)){
-				splitY = ya + (yb - ya)/2;
-			}
-
-			//std::cout << " x " << xa << " : " << xb << std::endl;
-			//std::cout << " slopeX " << slopeX.first << " : " << slopeX.second << std::endl;
-			//std::cout << " y " << ya << " : " << yb << std::endl;
-			//std::cout << " slopeY " << slopeY.first << " : " << slopeY.second << std::endl;
-			//std::cout << " delta " << deltaX << " : " << deltaY << std::endl;
-			//std::cout << " split " << splitX <<  " : " << splitY << std::endl;
-
-			auto zoids = z.split_slopes(CutWithSlopes{splitX, slopeX.first, slopeX.second}, CutWithSlopes{splitY, slopeY.first, slopeY.second});
-
 			//if (zoids.size() > 1){
-			//	std::cout << "spatial cut: " << z << std::endl;
-			//	for (auto subZoid : zoids) std::cout << " - " << subZoid << std::endl;
+			//	std::cout << "spatial cut: " << z << " from " << t0 << " to " << t1 <<std::endl;
+			//	for(auto z: zoids){
+			//		std::cout << " -" << z << std::endl;
+			//	}
 			//}
 
 			// spatial cut worked, recurse
 			if (zoids.size() > 1){
 				for (auto subZoid : zoids){
-					recursive_stencil_2D_aux(data, k, subZoid, t0, t1);
+					recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subZoid, t0, t1);
 				}
 			}
 			// Time cut
@@ -107,17 +95,18 @@ namespace stencil{
 				int halfTime = deltaT/2;
 				assert(halfTime >= 1);
 
-				//std::cout << " " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;
-				recursive_stencil_2D_aux(data, k, z, t0, t0+halfTime);
-				Hyperspace<2> upZoid ({xa+dxa*halfTime, ya+dya*halfTime}, 
-									  {xb+dxb*halfTime, yb+dyb*halfTime}, 
-									  {dxa, dya}, 
-									  {dxb, dyb});
+				//std::cout << " t1: " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;
+				recursive_stencil_aux<DataStorage, Kernel, Dim>(data, k, z, t0, t0+halfTime);
 
+				// We must update all the dimensions as we move in time.... 
+				auto upZoid = z;
+				for (auto d = 0; d < z.dimensions; ++d){
+					upZoid.a(d) = z.a(d) + z.da(d)*halfTime;
+					upZoid.b(d) = z.b(d) + z.db(d)*halfTime;
+				}
 
-				//std::cout << " " << upZoid << " from " << t0+halfTime << " to " << t1 <<std::endl;
-				recursive_stencil_2D_aux(data, k, upZoid, t0+halfTime , t1);
-
+				//std::cout << " t2:" << upZoid << " from " << t0+halfTime << " to " << t1 <<std::endl;
+				recursive_stencil_aux<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime , t1);
 			}
 		}
 	}
@@ -126,36 +115,39 @@ namespace stencil{
 	template <typename DataStorage, typename Kernel>
 	void recursive_stencil_2D(DataStorage& data, Kernel k, unsigned t){
 
-		std::array<int, Kernel::dimensions> leftSlopes;
-		std::array<int, Kernel::dimensions> rightSlopes;
-
-		int smallerSlope = k.getSlope(0).first;
-		for (int d = 0; d < Kernel::dimensions; ++d){
-			const auto& x = k.getSlope(d);
-			leftSlopes[d] = x.first;
-			rightSlopes[d] = x.second;
-			if (smallerSlope = MIN(smallerSlope, ABS(x.first))  );
-			if (smallerSlope = MIN(smallerSlope, ABS(x.second)) );
-		}
-
 		int w = getW(data), h = getH(data);
-		int smallerSide = MIN(w,h);
+
+	//	std::array<int, Kernel::dimensions> leftSlopes;
+	//	std::array<int, Kernel::dimensions> rightSlopes;
+
+	//	int smallerSlope = k.getSlope(0).first;
+	//	for (int d = 0; d < Kernel::dimensions; ++d){
+	//		const auto& x = k.getSlope(d);
+	//		leftSlopes[d] = x.first;
+	//		rightSlopes[d] = x.second;
+	//		if (smallerSlope = MIN(smallerSlope, ABS(x.first))  );
+	//		if (smallerSlope = MIN(smallerSlope, ABS(x.second)) );
+	//	}
+	//	int smallerSide = MIN(w,h);
 
 		// notice that the original piramid has perfect vertical sides
 		Hyperspace<2> z ({0,0}, {w,h}, {0,0}, {0,0} );
 
+		recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
+
+
 		// well, if the time steps are larger that one full piramid, then we 
 		// better cut slices of full computation
-		int t0 = 0;
-		auto step = MIN(t, (smallerSide/ (2*smallerSlope)) );
-		int t1 = step;
-		while (t0 < t){
+		//int t0 = 0;
+		//auto step = MIN(t, (smallerSide/ (2*smallerSlope)) );
+		//int t1 = step;
+		//while (t0 < t){
 
-			recursive_stencil_2D_aux(data, k, z, t0, t1);
+		//	recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, t0, t1);
 
-			t0+=step;
-			t1 = MIN(t, t1+step);
-		}
+		//	t0+=step;
+		//	t1 = MIN(t, t1+step);
+		//}
 	}
 
 } // stencil namespace

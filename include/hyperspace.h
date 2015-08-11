@@ -31,6 +31,8 @@ namespace stencil{
 
 	public:
 
+		static const unsigned dimensions = Dimensions;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~ ORTODOX  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		Hyperspace( const Hyperspace<Dimensions>& o)
@@ -44,16 +46,16 @@ namespace stencil{
 			}
 		}
 
-		Hyperspace(Hyperspace<Dimensions>&& o)
-			: scopes(std::move(o.scopes)), step(o.step)
-		{
-			for (auto i = 0; i < Dimensions; ++i){
-				assert(scopes[i].a <= scopes[i].b);
-				if (scopes[i].a == scopes[i].b){
-					assert(scopes[i].da <=0 && scopes[i].db >= 0);
-				}
-			}
-		}
+//		Hyperspace(Hyperspace<Dimensions>&& o)
+//			: scopes(std::move(o.scopes)), step(o.step)
+//		{
+//			for (auto i = 0; i < Dimensions; ++i){
+//				assert(scopes[i].a <= scopes[i].b);
+//				if (scopes[i].a == scopes[i].b){
+//					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+//				}
+//			}
+//		}
 
 		Hyperspace<Dimensions> operator=(const Hyperspace<Dimensions>& o){
 			scopes = o.scopes;
@@ -66,18 +68,18 @@ namespace stencil{
 				}
 			}
 		}
-		Hyperspace<Dimensions> operator=(Hyperspace<Dimensions>&& o){
-			std::swap(scopes, o.scopes);
-			step = o.step;
-
-			for (auto i = 0; i < Dimensions; ++i){
-				assert(scopes[i].a <= scopes[i].b);
-				if (scopes[i].a == scopes[i].b){
-					assert(scopes[i].da <=0 && scopes[i].db >= 0);
-				}
-			}
-
-		}
+//		Hyperspace<Dimensions> operator=(Hyperspace<Dimensions>&& o){
+//			std::swap(scopes, o.scopes);
+//			step = o.step;
+//
+//			for (auto i = 0; i < Dimensions; ++i){
+//				assert(scopes[i].a <= scopes[i].b);
+//				if (scopes[i].a == scopes[i].b){
+//					assert(scopes[i].da <=0 && scopes[i].db >= 0);
+//				}
+//			}
+//
+//		}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spetialized ctors  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -180,6 +182,13 @@ namespace stencil{
 		return scopes[dimension].db;
 	}
 
+	int getStep() const{
+		return step;
+	}
+	int& getStep(){
+		return step;
+	}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spliting tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		typedef std::vector<Hyperspace<Dimensions>> CutDim;
@@ -188,6 +197,7 @@ namespace stencil{
 		 * 	Split dimension, one central triagle plus two inverted triangles afterwards
 		 */
 		static inline CutDim split_W(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
+
 
 			//std::cout << "W " << split_value << "  " << da << ":" << db << std::endl;
 			//std::cout << hyp << std::endl;

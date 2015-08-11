@@ -5,7 +5,7 @@
 #include "hyperspace.h"
 #include "kernel.h"
 #include "bufferSet.h"
-#include "rec_stencil2.h"
+#include "rec_stencil.h"
 
 #include "timer.h" 
 
@@ -36,7 +36,7 @@ namespace {
 			void operator() (ImageSpace& data, unsigned i, unsigned j, unsigned t){
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
-				unsigned sum = 0;
+				double sum = 0.0;
 
 				for (unsigned x = MAX(0, ((int)i)-1); x <= MIN(getW(data)-1, i+1); ++x){
 					for (unsigned y = MAX(0, ((int)j)-1); y <= MIN(j+1, getH(data)-1); ++y){	
@@ -49,7 +49,7 @@ namespace {
 					}
 				}
 				
-				getElem(data, i, j, t+1) = sum;
+				getElem(data, i, j, t+1) = (unsigned char)sum;
 			}
 
 			std::pair<int,int> getSlope(unsigned dimension){
@@ -67,7 +67,7 @@ namespace {
 			void operator() (ImageSpace& data, unsigned i, unsigned j, unsigned t){
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
-				unsigned sum = 0;
+				double sum = 0.0;
 
 				for (unsigned x = MAX(0, ((int)i)-1, ((int)i)-2); x <= MIN(getW(data)-1, i+1, i+2); ++x){
 					for (unsigned y = MAX(0, ((int)j)-1, ((int)j)-2); y <= MIN(j+2, j+1, getH(data)-1); ++y){	
@@ -80,7 +80,7 @@ namespace {
 					}
 				}
 				
-				getElem(data, i, j, t+1) = sum;
+				getElem(data, i, j, t+1) = (unsigned char)sum;
 			}
 
 			std::pair<int,int> getSlope(unsigned dimension){
@@ -126,8 +126,11 @@ namespace {
 
 		struct Color_k : public Kernel<ImageSpace, 2, Life_k>{
 
+			unsigned steps;
+			Color_k (unsigned steps) : steps(256/steps) {}
+
 			void operator() (ImageSpace& data, unsigned i, unsigned j, unsigned t){
-				getElem(data, i, j, t+1) = t%256;
+				getElem(data, i, j, t+1) = (t*steps)%256;
 			}
 
 			std::pair<int,int> getSlope(unsigned dimension){
@@ -147,7 +150,7 @@ void parse_args(int argc, char *argv[]){
 	}
 	if (argc == 2){
 		ALL = std::string(argv[1]) == "all";
-		IT = std::string(argv[1]) == "it";
+		IT  = std::string(argv[1]) == "it";
 		REC = std::string(argv[1]) == "rec";
 	}
 }
@@ -158,21 +161,22 @@ using namespace cimg_library;
 int main(int argc, char *argv[]) {
 
 	// Input problem parameters
-	//CImg<unsigned char> image("../emo.jpg");
-	//CImg<unsigned char> image("../lena.png");
-	//CImg<unsigned char> image("../emo.jpg");
-	CImg<unsigned char> image("../yoBW.png");
-	const int timeSteps = 100;
+	//CImg<unsigned char> orgImage("../eight.png");
+	//CImg<unsigned char> orgImage("../sixteen.png");
+	//CImg<unsigned char> orgImage("../emo.jpg");
+	CImg<unsigned char> orgImage("../lena.png");
+	//CImg<unsigned char> orgImage("../yoBW.png");
+	const int timeSteps = 2;
 	
-	assert(image.size ()  == (unsigned)image.width() *  (unsigned)image.height());
+	assert(orgImage.size ()  == (unsigned)orgImage.width() *  (unsigned)orgImage.height() && "only Grayscale allowed");
 
 	// create multidimensional buffer for flip-flop
-	ImageSpace recBuffer(std::vector<unsigned char>(image.begin(), image.end()), 
-										{(unsigned)image.width(), (unsigned)image.height() } );
-	ImageSpace parBuffer(std::vector<unsigned char>(image.begin(), image.end()), 
-										{(unsigned)image.width(), (unsigned)image.height() } );
-	assert(image.size () == parBuffer.getSize());
-	assert(image.size () == recBuffer.getSize());
+	ImageSpace recBuffer(std::vector<unsigned char>(orgImage.begin(), orgImage.end()), 
+										{(unsigned)orgImage.width(), (unsigned)orgImage.height() } );
+	ImageSpace itBuffer(std::vector<unsigned char>(orgImage.begin(), orgImage.end()), 
+										{(unsigned)orgImage.width(), (unsigned)orgImage.height() } );
+	assert(orgImage.size () == itBuffer.getSize());
+	assert(orgImage.size () == recBuffer.getSize());
 
 	parse_args(argc, argv);
 
@@ -180,7 +184,8 @@ int main(int argc, char *argv[]) {
 	//Blur3_k kernel;
 	Blur5_k kernel;
 	//Life_k kernel;
-	//Color_k kernel;
+	//Color_k kernel(timeSteps);
+	//Copy_k kernel;
 	
 
 	if (REC || ALL){
@@ -193,9 +198,9 @@ int main(int argc, char *argv[]) {
 
 		auto seq = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				for (unsigned i = 0; i < getW(parBuffer); ++i){
-					for (unsigned j = 0; j < getH(parBuffer); ++j){
-						kernel(parBuffer, i, j, t);
+				for (unsigned i = 0; i < getW(itBuffer); ++i){
+					for (unsigned j = 0; j < getH(itBuffer); ++j){
+						kernel(itBuffer, i, j, t);
 					}
 				}
 			}
@@ -204,17 +209,25 @@ int main(int argc, char *argv[]) {
 		TIME_CALL(seq());
 	}
 
-//	// Copy back the data and plot
-//	{
-//		CImg<unsigned char> recImage(recBuffer.getPointer(timeSteps%2), getW(recBuffer), getH(recBuffer));
-//		CImg<unsigned char> parImage(parBuffer.getPointer(timeSteps%2), getW(parBuffer), getH(parBuffer));
-//
-//		CImgDisplay original(image, "original"), rec(recImage, "rec"), par(parImage, "par"); 
-//
-//		while (!original.is_closed() && !rec.is_closed() && !par.is_closed()){
-//			original.wait();
-//		}
-//		return 0;
-//	}
+	// Copy back the data and plot
+	if (ALL){
+
+
+		CImg<unsigned char> recImage(recBuffer.getPointer(timeSteps%2), getW(recBuffer), getH(recBuffer));
+		CImg<unsigned char> itImage(itBuffer.getPointer(timeSteps%2), getW(itBuffer), getH(itBuffer));
+
+		orgImage = orgImage.get_resize(800, 800, -100, -100, 1);
+		recImage = recImage.get_resize(800, 800, -100, -100, 1);
+		itImage = itImage.get_resize(800, 800, -100, -100, 1);
+
+		CImgDisplay original(orgImage, "original"), rec(recImage, "rec"), par(itImage, "par"); 
+
+		if (recBuffer != itBuffer) std::cout << "VALIDATION FAILED" << std::endl;
+
+		while (!original.is_closed() && !rec.is_closed() && !par.is_closed()){
+			original.wait();
+		}
+		return 0;
+	}
 }
 

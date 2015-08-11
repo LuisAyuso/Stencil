@@ -54,6 +54,23 @@ namespace stencil{
 			return acum;
 		}
 
+// ~~~~~~~~~~~~~~~~~~~~~~~ Comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+		bool operator == (const BufferSet<Elem, Dimensions, Copies>& o){
+
+			for (int c = 0; c < Copies; ++c){
+				if (storage[c].size() != o.storage[c].size()) return false;
+				for (int i = 0; i< storage[c].size(); ++i){
+					if (storage[c][i] != o.storage[c][i]) return false;
+				}
+			}
+			return true;
+		}
+
+		bool operator != (const BufferSet<Elem, Dimensions, Copies>& o){
+			return !(*this == o);
+		}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~ other tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		std::ostream& printTo(std::ostream& out) const{
