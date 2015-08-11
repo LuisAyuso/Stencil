@@ -164,9 +164,9 @@ int main(int argc, char *argv[]) {
 	//CImg<unsigned char> orgImage("../eight.png");
 	//CImg<unsigned char> orgImage("../sixteen.png");
 	//CImg<unsigned char> orgImage("../emo.jpg");
-	CImg<unsigned char> orgImage("../lena.png");
-	//CImg<unsigned char> orgImage("../yoBW.png");
-	const int timeSteps = 2;
+	//CImg<unsigned char> orgImage("../lena.png");
+	CImg<unsigned char> orgImage("../yoBW.png");
+	const int timeSteps = 12;
 	
 	assert(orgImage.size ()  == (unsigned)orgImage.width() *  (unsigned)orgImage.height() && "only Grayscale allowed");
 

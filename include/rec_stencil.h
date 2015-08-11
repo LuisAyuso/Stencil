@@ -117,37 +117,38 @@ namespace stencil{
 
 		int w = getW(data), h = getH(data);
 
-	//	std::array<int, Kernel::dimensions> leftSlopes;
-	//	std::array<int, Kernel::dimensions> rightSlopes;
+		std::array<int, Kernel::dimensions> leftSlopes;
+		std::array<int, Kernel::dimensions> rightSlopes;
 
-	//	int smallerSlope = k.getSlope(0).first;
-	//	for (int d = 0; d < Kernel::dimensions; ++d){
-	//		const auto& x = k.getSlope(d);
-	//		leftSlopes[d] = x.first;
-	//		rightSlopes[d] = x.second;
-	//		if (smallerSlope = MIN(smallerSlope, ABS(x.first))  );
-	//		if (smallerSlope = MIN(smallerSlope, ABS(x.second)) );
-	//	}
-	//	int smallerSide = MIN(w,h);
+		int smallerSlope = k.getSlope(0).first;
+		for (int d = 0; d < Kernel::dimensions; ++d){
+			const auto& x = k.getSlope(d);
+			leftSlopes[d] = x.first;
+			rightSlopes[d] = x.second;
+			if (smallerSlope = MIN(smallerSlope, ABS(x.first))  );
+			if (smallerSlope = MIN(smallerSlope, ABS(x.second)) );
+		}
+		int smallerSide = MIN(w,h);
+		if (smallerSlope == 0) smallerSlope =1;
 
 		// notice that the original piramid has perfect vertical sides
 		Hyperspace<2> z ({0,0}, {w,h}, {0,0}, {0,0} );
 
-		recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
+//		recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
 
 
 		// well, if the time steps are larger that one full piramid, then we 
 		// better cut slices of full computation
-		//int t0 = 0;
-		//auto step = MIN(t, (smallerSide/ (2*smallerSlope)) );
-		//int t1 = step;
-		//while (t0 < t){
+		int t0 = 0;
+		auto step = MIN(t, (smallerSide/ (2*smallerSlope)) );
+		int t1 = step;
+		while (t0 < t){
 
-		//	recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, t0, t1);
+			recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, t0, t1);
 
-		//	t0+=step;
-		//	t1 = MIN(t, t1+step);
-		//}
+			t0+=step;
+			t1 = MIN(t, t1+step);
+		}
 	}
 
 } // stencil namespace
