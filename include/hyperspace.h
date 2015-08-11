@@ -176,24 +176,22 @@ namespace stencil{
 		 */
 		static inline CutDim split_W(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
-			CutDim res;
-
 			//std::cout << "W " << split_value << "  " << da << ":" << db << std::endl;
 			//std::cout << hyp << std::endl;
 
-			res.push_back(hyp);
-			res[0].scopes[dimension].da = da;
-			res[0].scopes[dimension].db = db;
+			auto central = hyp;
+			central.scopes[dimension].da = da;
+			central.scopes[dimension].db = db;
 
-			res.push_back(hyp);
-			res[1].scopes[dimension].b = res[1].scopes[dimension].a;
-			res[1].step ++;
+			auto left = hyp;
+			left.scopes[dimension].b = left.scopes[dimension].a;
+			left.step ++;
+	
+			auto right = hyp;
+			right.scopes[dimension].a = right.scopes[dimension].b;
+			right.step ++;
 
-			res.push_back(hyp);
-			res[2].scopes[dimension].a = res[2].scopes[dimension].b;
-			res[2].step ++;
-
-			return res;
+			return {central, left, right};
 		}
 
 		/**
@@ -201,25 +199,24 @@ namespace stencil{
 		 */
 		static inline CutDim split_M(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
-			CutDim res;
 			//std::cout << "M " << split_value << "  " << da << ":" << db << std::endl;
 
-			res.push_back(hyp);
-			res[0].scopes[dimension].b = split_value;
-			res[0].scopes[dimension].db = db;
+			auto left = hyp;
+			left.scopes[dimension].b = split_value;
+			left.scopes[dimension].db = db;
 
-			res.push_back(hyp);
-			res[1].scopes[dimension].a = split_value;
-			res[1].scopes[dimension].da = da;
+			auto right = hyp;
+			right.scopes[dimension].a = split_value;
+			right.scopes[dimension].da = da;
 
-			res.push_back(hyp);
-			res[2].scopes[dimension].a = split_value;
-			res[2].scopes[dimension].b = split_value;
-			res[2].scopes[dimension].da = -1 * da;
-			res[2].scopes[dimension].db = -1 * db;
-			res[2].step ++;
+			auto central = hyp;
+			central.scopes[dimension].a = split_value;
+			central.scopes[dimension].b = split_value;
+			central.scopes[dimension].da = -1 * da;
+			central.scopes[dimension].db = -1 * db;
+			central.step ++;
 
-			return res;
+			return {left, right, central};
 		}
 
 		static inline CutDim split_1d(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
