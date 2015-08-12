@@ -43,7 +43,6 @@ TEST(Hyperspace, NoSplit){
 		EXPECT_EQ(n.size(), 1);
 }
 
-
 TEST(Hyperspace, Split1D){
 
 		Hyperspace<1> h (0,10,1,-1);
@@ -420,3 +419,4 @@ TEST(Hyperspace, Split_2D_16){
 	}
 
 }
+

@@ -196,22 +196,23 @@ namespace stencil{
 		/**
 		 * 	Split dimension, one central triagle plus two inverted triangles afterwards
 		 */
-		static inline CutDim split_W(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
+		template <unsigned Dim>
+		static inline CutDim split_W(const Hyperspace<Dimensions>& hyp, int da, int db){
 
 
 			//std::cout << "W " << split_value << "  " << da << ":" << db << std::endl;
 			//std::cout << hyp << std::endl;
 
 			auto central = hyp;
-			central.scopes[dimension].da = da;
-			central.scopes[dimension].db = db;
+			central.scopes[Dim].da = da;
+			central.scopes[Dim].db = db;
 
 			auto left = hyp;
-			left.scopes[dimension].b = left.scopes[dimension].a;
+			left.scopes[Dim].b = left.scopes[Dim].a;
 			left.step ++;
 	
 			auto right = hyp;
-			right.scopes[dimension].a = right.scopes[dimension].b;
+			right.scopes[Dim].a = right.scopes[Dim].b;
 			right.step ++;
 
 			return {central, left, right};
@@ -220,44 +221,46 @@ namespace stencil{
 		/**
 		 * 	Split dimension, one two triangles, one inverted triangle afterwards
 		 */
-		static inline CutDim split_M(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
+		template <unsigned Dim>
+		static inline CutDim split_M(int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
 			//std::cout << "M " << split_value << "  " << da << ":" << db << std::endl;
 
 			auto left = hyp;
-			left.scopes[dimension].b = split_value;
-			left.scopes[dimension].db = db;
+			left.scopes[Dim].b = split_value;
+			left.scopes[Dim].db = db;
 
 			auto right = hyp;
-			right.scopes[dimension].a = split_value;
-			right.scopes[dimension].da = da;
+			right.scopes[Dim].a = split_value;
+			right.scopes[Dim].da = da;
 
 			auto central = hyp;
-			central.scopes[dimension].a = split_value;
-			central.scopes[dimension].b = split_value;
-			central.scopes[dimension].da = -1 * da;
-			central.scopes[dimension].db = -1 * db;
+			central.scopes[Dim].a = split_value;
+			central.scopes[Dim].b = split_value;
+			central.scopes[Dim].da = -1 * da;
+			central.scopes[Dim].db = -1 * db;
 			central.step ++;
 
 			return {left, right, central};
 		}
 
-		static inline CutDim split_1d(unsigned dimension, int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
+		template <unsigned Dim>
+		static inline CutDim split_1d(int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
-			if (split_value == hyp.scopes[dimension].a) return {hyp};
-			if (split_value == hyp.scopes[dimension].b) return {hyp};
+			if (split_value == hyp.scopes[Dim].a) return {hyp};
+			if (split_value == hyp.scopes[Dim].b) return {hyp};
 
-			assert(split_value > hyp.scopes[dimension].a  && "nonsense split");
-			assert(split_value < hyp.scopes[dimension].b  && "nonsense split");
+			assert(split_value > hyp.scopes[Dim].a  && "nonsense split");
+			assert(split_value < hyp.scopes[Dim].b  && "nonsense split");
 
 			// if the dimension pressents a shape like an inverted V: split it in M
-			if (hyp.scopes[dimension].da >= 0 && hyp.scopes[dimension].db <= 0) {
-				return split_M(dimension, split_value,  hyp, da, db);
+			if (hyp.scopes[Dim].da >= 0 && hyp.scopes[Dim].db <= 0) {
+				return split_M<Dim> (split_value,  hyp, da, db);
 			}
 
 			// if the dimension pressents a shape like a V: split it in W
-			if (hyp.scopes[dimension].da < 0 || hyp.scopes[dimension].db > 0) {
-				return split_W(dimension, split_value, hyp, -hyp.scopes[dimension].da, -hyp.scopes[dimension].db);
+			if (hyp.scopes[Dim].da < 0 || hyp.scopes[Dim].db > 0) {
+				return split_W<Dim> (hyp, -hyp.scopes[Dim].da, -hyp.scopes[Dim].db);
 			}
 
 			assert(false  && "this is not a valid geometry");
@@ -266,7 +269,7 @@ namespace stencil{
 
 		template <unsigned Dim, typename ... Cuts>
 		inline CutDim split(int cut) const{
-			return split_1d(Dim, cut, *this, this->scopes[Dim].da, this->scopes[Dim].db);
+			return split_1d<Dim> (cut, *this, this->scopes[Dim].da, this->scopes[Dim].db);
 		}
 
 		template <unsigned Dim, typename ... Cuts>
@@ -276,7 +279,7 @@ namespace stencil{
 
 			CutDim res;
 			for (const auto& hyp : tmp){
-				auto x = split_1d(Dim, cut, hyp, hyp.scopes[Dim].da, hyp.scopes[Dim].db);
+				auto x = split_1d<Dim> (cut, hyp, hyp.scopes[Dim].da, hyp.scopes[Dim].db);
 				res.insert(res.end(), x.begin(), x.end());
 			}
 
@@ -293,7 +296,7 @@ namespace stencil{
 
 		template <unsigned Dim >
 		inline CutDim split_slopes(const CutWithSlopes& cut) const{
-			return split_1d(Dim, cut.split_value, *this, cut.da, cut.db);
+			return split_1d<Dim> (cut.split_value, *this, cut.da, cut.db);
 		}
 
 		template <unsigned Dim, typename ... Cuts>
@@ -303,7 +306,7 @@ namespace stencil{
 
 			CutDim res;
 			for (const auto& hyp : tmp){
-				auto x = split_1d(Dim, cut.split_value, hyp, cut.da, cut.db);
+				auto x = split_1d<Dim> (cut.split_value, hyp, cut.da, cut.db);
 				res.insert(res.end(), x.begin(), x.end());
 			}
 
