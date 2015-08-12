@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+#include <CImg.h>
+
 #include "hyperspace.h"
 #include "kernel.h"
 #include "bufferSet.h"
@@ -10,8 +12,10 @@
 #include "timer.h" 
 
 using namespace stencil;
+using namespace cimg_library;
 
 //typedef unsigned char PixelType;
+//typedef float PixelType;
 typedef double PixelType;
 typedef BufferSet<PixelType, 2> ImageSpace;
 
@@ -142,37 +146,65 @@ namespace {
 
 } // #######################################################################################
 
-bool REC = false, IT = false, ALL = false;
+bool REC = false, IT = false, ALL = true;
 
-void parse_args(int argc, char *argv[]){
-
-	if (argc == 1) {
-		ALL = true;
-		return;
-	}
-	if (argc == 2){
-		ALL = std::string(argv[1]) == "all";
-		IT  = std::string(argv[1]) == "it";
-		REC = std::string(argv[1]) == "rec";
-	}
-}
-
-
-
-
-#include "CImg.h"
-using namespace cimg_library;
-int main(int argc, char *argv[]) {
-
-	// ~~~~~~~~~~~~~~~ Input problem parameters ~~~~~~~~~~~~~~~~~~~~~
 	//const char* input_file = "../eight.png";
 	//const char*  input_file = "../sixteen.png";
 	//const char*  input_file = "../emo.jpg";
 	//const char*  input_file = "../lena.png";
-	const char* input_file = "../yoBW.png";
+	char* input_file = nullptr;
 	//const char* input_file = "../skogafossBW.png";
-	const int timeSteps = 10;
+	int timeSteps = 10;
+
+
+void help(){
+	std::cout << "Stencil ops:" << std::endl;
+	std::cout << "Stencil [all|it|rec] -i image [-r time steps]" << std::endl;
+}
+
+void parse_args(int argc, char *argv[]){
+
+	int i = 1;
+	while(i < argc){
+
+		std::string param(argv[i]);
+		IT  = param == "it";
+		REC = param == "rec";
+
+
+		if( param == "-i"){
+			i++;
+			input_file = argv[i];
+		}
+		else if (param == "-r"){
+
+			i++;
+			timeSteps = std::atoi(argv[i]);
+		}
+		else if (param == "-h"){
+
+			help();
+			exit(0);
+		}
+
+		i++;
+	}
+
+	ALL = !(IT || REC);
+}
+
+
+//######################## MAIN ###################################################
+
+int main(int argc, char *argv[]) {
+
+	// ~~~~~~~~~~~~~~~ Input problem parameters ~~~~~~~~~~~~~~~~~~~~~
 	parse_args(argc, argv);
+
+	if (!input_file) {
+		help();
+		return -1;
+	}
 
 	// ~~~~~~~~~~~~~~~ Load image ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	CImg<PixelType> orgImage(input_file);
@@ -181,10 +213,8 @@ int main(int argc, char *argv[]) {
 	std::cout <<" execute " << input_file << " with " << timeSteps << " time steps" << std::endl;
 
 	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
-	ImageSpace recBuffer(std::vector<PixelType>(orgImage.begin(), orgImage.end()), 
-										{(unsigned)orgImage.width(), (unsigned)orgImage.height() } );
-	ImageSpace itBuffer(std::vector<PixelType>(orgImage.begin(), orgImage.end()), 
-										{(unsigned)orgImage.width(), (unsigned)orgImage.height() } );
+	ImageSpace recBuffer( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, std::vector<PixelType>(orgImage.begin(), orgImage.end()));
+	ImageSpace itBuffer ( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, std::vector<PixelType>(orgImage.begin(), orgImage.end()));
 	assert(orgImage.size () == itBuffer.getSize());
 	assert(orgImage.size () == recBuffer.getSize());
 
@@ -198,24 +228,25 @@ int main(int argc, char *argv[]) {
 	
 	// ~~~~~~~~~~~~~~~~ RUN ~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if (REC || ALL){
-		std::cout << " ==== Recursive ==== " << std::endl;
-		TIME_CALL(recursive_stencil_2D(recBuffer, kernel, timeSteps));
+		//TIME_CALL( recursive_stencil_2D( recBuffer, kernel, timeSteps) );
+		auto t = time_call(recursive_stencil_2D<ImageSpace, Blur5_k>, recBuffer, kernel, timeSteps);
+		std::cout << "recursive: " << t << std::endl;
 	}
 
 	if (IT || ALL){
-		std::cout << " ==== Iterative ==== " << std::endl;
-
-		auto seq = [&] (){
+		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				for (unsigned i = 0; i < getW(itBuffer); ++i){
-					for (unsigned j = 0; j < getH(itBuffer); ++j){
+				for (unsigned j = 0; j < getH(itBuffer); ++j){
+					for (unsigned i = 0; i < getW(itBuffer); ++i){
 						kernel(itBuffer, i, j, t);
 					}
 				}
 			}
 		};
 
-		TIME_CALL(seq());
+		//TIME_CALL(it());
+		auto t = time_call(it);
+		std::cout << "iterative: " << t << std::endl;
 	}
 
 	// ~~~~~~~~~~~~~~~~ Plot and Validate  ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -229,9 +260,11 @@ int main(int argc, char *argv[]) {
 		recImage = recImage.get_resize(800, 800, -100, -100, 1);
 		itImage = itImage.get_resize(800, 800, -100, -100, 1);
 
-		CImgDisplay original(orgImage, "original"), rec(recImage, "rec"), par(itImage, "par"); 
+		CImgDisplay original(orgImage, "original"), rec(recImage, "rec"), par(itImage, "iter"); 
 
 		if (recBuffer != itBuffer) std::cout << "VALIDATION FAILED" << std::endl;
+		else std::cout << "VALIDATION OK" << std::endl;
+
 
 		while (!original.is_closed() && !rec.is_closed() && !par.is_closed()){
 			original.wait();

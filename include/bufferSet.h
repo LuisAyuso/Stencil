@@ -10,61 +10,83 @@
 namespace stencil{
 	
 
-	template <typename Elem, unsigned Dimensions, unsigned Copies = 2>
+	template <typename Elem, size_t Dimensions, unsigned Copies = 2>
 	struct BufferSet: public utils::Printable{
 
 		static const unsigned copies = Copies;
 		static const unsigned dimensions = Dimensions;
-		const std::array<unsigned, Dimensions> dimension_sizes;
-		std::array<std::vector<Elem>, copies> storage;
 
+		const std::array<size_t, Dimensions> dimension_sizes;
+		size_t buffer_size;
+		Elem* storage;
 
-// ~~~~~~~~~~~~~~~~~~~~~~~ Constructor  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~ Canonical  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		BufferSet(const std::vector<Elem>& data, const std::array<unsigned, Dimensions>& dimension_sizes)
-			: dimension_sizes(dimension_sizes), storage({std::vector<Elem>(data.begin(), data.end())})
+		BufferSet(const std::array<size_t, Dimensions>& dimension_sizes, const std::vector<Elem>& data)
+			: dimension_sizes(dimension_sizes) 
 		{ 
-			for(int i=1; i < copies; ++i) {
-				//storage[i].insert(storage[i].begin(), data.begin(), data.end());
-				storage[i].resize(getSize());
-			}
+			buffer_size = 1;
+			for (auto i = 0; i < Dimensions; ++i)  buffer_size *= dimension_sizes[i];
 
-		}
-
-		BufferSet(std::vector<Elem>&& data, const std::array<unsigned, Dimensions>& dimension_sizes)
-			: dimension_sizes(dimension_sizes), storage({std::move(data)})
-		{ 
-			for(int i=1; i < copies; ++i) {
-				storage[i].resize(getSize());
+			storage = new Elem[buffer_size*copies];
+			for (int i = 0; i < buffer_size; ++i){
+				storage[i] = data[i];
 			}
 		}
 
+		BufferSet(const std::array<size_t, Dimensions>& dimension_sizes, const Elem* data)
+			: dimension_sizes(dimension_sizes) 
+		{ 
+			buffer_size = 1;
+			for (auto i = 0; i < Dimensions; ++i)  buffer_size *= dimension_sizes[i];
+
+			storage = new Elem[buffer_size*copies];
+			memcpy(storage, data, buffer_size * sizeof(Elem));
+		}
+
+		BufferSet(const BufferSet<Elem, Dimensions, Copies>& o)
+		: dimension_sizes(o.dimension_sizes), buffer_size(o.buffer_size)
+		{
+			storage = new Elem[buffer_size*copies];
+			memcpy(storage, o.storage, buffer_size*copies * sizeof(Elem));
+		//	for (int i = 0; i < buffer_size*copies; ++i){
+		//		storage[i] = o.storage[i];
+		//	}
+		}
+		
+		BufferSet(BufferSet<Elem, Dimensions, Copies>&& o)
+		: dimension_sizes(o.dimension_sizes), buffer_size(o.buffer_size), storage(nullptr)
+		{ 
+			o.buffer_size = 0;
+			std::swap(storage, o.storage);
+		}
+
+		~BufferSet()
+		{ 
+			delete[] storage;
+		}
 // ~~~~~~~~~~~~~~~~~~~~~~~ getters  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		Elem* getPointer(unsigned copy = 0){
-			assert( storage[copy].size() == getSize());
-			return storage[copy].data();
+			return storage + buffer_size*copy;
 		}
 
-		std::vector<Elem> getData(unsigned copy = 0){
-			return storage[copy];
-		}
+//		std::vector<Elem> getData(unsigned copy = 0){
+//			return std::vector<Elem>(getPointer(copy), buffer_size);
+//		}
 
 		unsigned getSize(){
-			unsigned acum =1;
-			for (unsigned i =0; i< Dimensions; ++i) acum *= dimension_sizes[i];
-			return acum;
+			return buffer_size;
 		}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ Comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		bool operator == (const BufferSet<Elem, Dimensions, Copies>& o){
 
-			for (int c = 0; c < Copies; ++c){
-				if (storage[c].size() != o.storage[c].size()) return false;
-				for (int i = 0; i< storage[c].size(); ++i){
-					if (storage[c][i] != o.storage[c][i]) return false;
-				}
+			if (buffer_size != o.buffer_size) return false;
+
+			for (int i = 0; i< buffer_size; ++i){
+				if (storage[i] != o.storage[i]) return false;
 			}
 			return true;
 		}
@@ -79,11 +101,13 @@ namespace stencil{
 			
 			out << "Bufferset[";
 			for (const auto& i : dimension_sizes) out << i << ",";
-			out << "]x" << copies;
+			out << "](" << buffer_size<< "elems)x" << copies;
 
-		//	out << " {";
-		//	for (const auto& i : storage[0]) out << (unsigned)i << ",";
-		//	out << "}";
+			for (int c=0; c < Copies; ++c){
+				out << " {";
+				for ( auto i = 0; i< buffer_size; ++i) out << storage[c*buffer_size + i] << ",";
+				out << "}";
+			}
 
 			return out;
 		}
@@ -92,40 +116,42 @@ namespace stencil{
 // ~~~~~~~~~~~~~~~~~~~~~~~ external Getters  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		#define FOR_DIMENSION(N) \
-			template<typename E, unsigned D, unsigned C>\
+			template<typename E, size_t D, unsigned C>\
 			inline typename std::enable_if< is_eq<D, N>::value, E&>::type
 
 		FOR_DIMENSION(1) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned t = 0){
 			assert(i<b.dimension_sizes[0] && "i out of range");
-			return b.storage[t%b.copies][i];
+			assert(b.buffer_size && "accessing invalidated buffer");
+			return b.storage[(b.buffer_size * (t%b.copies) ) + i];
 		}
 
 		FOR_DIMENSION(2) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned t = 0){
 			assert(i<b.dimension_sizes[0] && "i out of range");
 			assert(j<b.dimension_sizes[1] && "j out of range");
-			return b.storage[t%b.copies][i+j*b.dimension_sizes[0]];
+			assert(b.buffer_size && "accessing invalidated buffer");
+			return b.storage[b.buffer_size*(t%b.copies) + i+(j*b.dimension_sizes[0])];
 		}
 		
 		FOR_DIMENSION(3) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned k, unsigned t = 0){
 			assert(i<b.dimension_sizes[0] && "i out of range");
 			assert(j<b.dimension_sizes[1] && "j out of range");
 			assert(k<b.dimension_sizes[2] && "k out of range");
-			return b.storage[t%b.copies][i+j*b.dimension_sizes[0]+k*b.dimension_sizes[1]*b.dimension_sizes[0]];
+			return b.storage[b.buffer_size*(t%b.copies) + i+(j*b.dimension_sizes[0])+(k*b.dimension_sizes[1]*b.dimension_sizes[0])];
 		}
 		
 		#undef FOR_DIMENSION
 
 		#define FROM_DIMENSION(N) \
-			template<typename E, unsigned D, unsigned C>\
+			template<typename E, size_t D, unsigned C>\
 			inline typename std::enable_if< is_ge<D, N>::value, int>::type
 
-		FROM_DIMENSION(1) getW(BufferSet<E,D,C>& b){
+		FROM_DIMENSION(1) getW(const BufferSet<E,D,C>& b){
 			return b.dimension_sizes[0];
 		}
-		FROM_DIMENSION(2) getH(BufferSet<E,D,C>& b){
+		FROM_DIMENSION(2) getH(const BufferSet<E,D,C>& b){
 			return b.dimension_sizes[1];
 		}
-		FROM_DIMENSION(3) getD(BufferSet<E,D,C>& b){
+		FROM_DIMENSION(3) getD(const BufferSet<E,D,C>& b){
 			return b.dimension_sizes[2];
 		}
 

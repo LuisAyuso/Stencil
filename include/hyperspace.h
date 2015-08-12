@@ -192,12 +192,13 @@ namespace stencil{
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spliting tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		typedef std::vector<Hyperspace<Dimensions>> CutDim;
+		typedef std::array<Hyperspace<Dimensions>,3> CutDim_exact;
 
 		/**
 		 * 	Split dimension, one central triagle plus two inverted triangles afterwards
 		 */
 		template <unsigned Dim>
-		static inline CutDim split_W(const Hyperspace<Dimensions>& hyp, int da, int db){
+		static inline CutDim_exact split_W(const Hyperspace<Dimensions>& hyp, int da, int db){
 
 
 			//std::cout << "W " << split_value << "  " << da << ":" << db << std::endl;
@@ -222,7 +223,7 @@ namespace stencil{
 		 * 	Split dimension, one two triangles, one inverted triangle afterwards
 		 */
 		template <unsigned Dim>
-		static inline CutDim split_M(int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
+		static inline CutDim_exact split_M(int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
 
 			//std::cout << "M " << split_value << "  " << da << ":" << db << std::endl;
 
@@ -255,12 +256,14 @@ namespace stencil{
 
 			// if the dimension pressents a shape like an inverted V: split it in M
 			if (hyp.scopes[Dim].da >= 0 && hyp.scopes[Dim].db <= 0) {
-				return split_M<Dim> (split_value,  hyp, da, db);
+				auto partition = split_M<Dim> (split_value,  hyp, da, db);
+				return CutDim(partition.begin(), partition.end());
 			}
 
 			// if the dimension pressents a shape like a V: split it in W
 			if (hyp.scopes[Dim].da < 0 || hyp.scopes[Dim].db > 0) {
-				return split_W<Dim> (hyp, -hyp.scopes[Dim].da, -hyp.scopes[Dim].db);
+				auto partition = split_W<Dim> (hyp, -hyp.scopes[Dim].da, -hyp.scopes[Dim].db);
+				return CutDim(partition.begin(), partition.end());
 			}
 
 			assert(false  && "this is not a valid geometry");

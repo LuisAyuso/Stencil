@@ -37,22 +37,23 @@ namespace stencil{
 		if (deltaT == 1){
 
 			int t = t0;
-	//		for (int t = t0; t < t1; ++t){
+			//for (int t = t0; t < t1; ++t){
 				int ia = z.a(0);
 				int ib = z.b(0);
 				int ja = z.a(1);
 				int jb = z.b(1);
 
+		
 				for (int i = ia; i < ib; ++i){
 					for (int j = ja; j < jb; ++j){
 						k(data, i, j, t);
 					}
 				}
-	//			ia += z.da(0);
-	//			ib += z.db(0);
-	//			ja += z.da(1);
-	//			jb += z.db(1);
-	//		}
+			//	ia += z.da(0);
+			//	ib += z.db(0);
+			//	ja += z.da(1);
+			//	jb += z.db(1);
+			//}
 		}
 		
 		else{
@@ -76,27 +77,25 @@ namespace stencil{
 				auto split = a + deltaBase /2;
 
 				//std::cout << " cut in M " << split << std::endl;
-				auto subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
+				const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
 
 				assert(subSpaces.size() == 3);
 
-				for (const auto& m : subSpaces) {
-					//std::cout << " - " << m << std::endl;
-					recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, m, t0, t1);
-				}
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[0], t0, t1);
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[1], t0, t1);
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[2], t0, t1);
 				
 			}
 			// Cut in W
 			else if (deltaTop >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){ 
 
 				//std::cout << " cut in M " << std::endl;
-				auto subSpaces  = Target_Hyperspace::template split_W<Dim> (z, slopeDim.first, slopeDim.second);
+				const auto& subSpaces  = Target_Hyperspace::template split_W<Dim> (z, slopeDim.first, slopeDim.second);
 				assert(subSpaces.size() == 3);
 
-				for (const auto& m : subSpaces) {
-					//std::cout << " - " << m << std::endl;
-					recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, m, t0, t1);
-				}
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[0], t0, t1);
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[1], t0, t1);
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[2], t0, t1);
 			}
 			// Time cut
 			else { // if (deltaT > 1 && deltaX > 0  && deltaY > 0){

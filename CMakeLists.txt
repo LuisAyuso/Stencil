@@ -40,6 +40,7 @@ foreach( test_source ${test_sources} )
 	add_executable (${unit_test} ${test_source})
 	target_link_libraries(${unit_test} ${GTEST_LIBRARY})
 	target_link_libraries(${unit_test} ${GTEST_LIBRARY_WITH_MAIN})
+	target_link_libraries(${unit_test} ${X11_X11_LIB})
 	add_test (${unit_test} ${unit_test} )
 
 endforeach(test_source)
