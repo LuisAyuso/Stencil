@@ -146,7 +146,7 @@ namespace {
 
 } // #######################################################################################
 
-bool REC = false, IT = false, ALL = true;
+bool REC = false, IT = false, INV = false, ALL = false, VALIDATE=true, VISUALIZE=false;
 
 	//const char* input_file = "../eight.png";
 	//const char*  input_file = "../sixteen.png";
@@ -168,10 +168,15 @@ void parse_args(int argc, char *argv[]){
 	while(i < argc){
 
 		std::string param(argv[i]);
-		IT  = param == "it";
-		REC = param == "rec";
-
-
+		if(param == "it") {
+			IT = true;
+		}
+		else if(param == "rec") {
+			REC = true;
+		}
+		else if(param == "inv") {
+			INV = true;
+		}
 		if( param == "-i"){
 			i++;
 			input_file = argv[i];
@@ -186,11 +191,24 @@ void parse_args(int argc, char *argv[]){
 			help();
 			exit(0);
 		}
+		else if (param == "-no-val"){
+			VALIDATE = false;
+		}
+		else if (param == "-v"){
+			VISUALIZE = true;
+		}
 
 		i++;
 	}
 
-	ALL = !(IT || REC);
+	ALL = !(IT || REC || INV);
+
+	VALIDATE =  ALL;
+
+	if (VISUALIZE && !ALL) {
+		std::cout << "can only visualize when running ALL" << std::endl;
+		exit(-1);
+	}
 }
 
 
@@ -213,11 +231,12 @@ int main(int argc, char *argv[]) {
 	std::cout <<" execute " << input_file << " with " << timeSteps << " time steps" << std::endl;
 
 	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
-	ImageSpace recBuffer( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, std::vector<PixelType>(orgImage.begin(), orgImage.end()));
-	ImageSpace itBuffer ( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, std::vector<PixelType>(orgImage.begin(), orgImage.end()));
+	ImageSpace recBuffer( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, orgImage.data());
+	ImageSpace itBuffer ( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, orgImage.data());
+	ImageSpace invBuffer( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, orgImage.data());
 	assert(orgImage.size () == itBuffer.getSize());
 	assert(orgImage.size () == recBuffer.getSize());
-
+	assert(orgImage.size () == invBuffer.getSize());
 
 	// ~~~~~~~~~~~~~~~~~ create kernel ~~~~~~~~~~~~~~~~~~~~~~~
 	//Blur3_k kernel;
@@ -230,46 +249,64 @@ int main(int argc, char *argv[]) {
 	if (REC || ALL){
 		//TIME_CALL( recursive_stencil_2D( recBuffer, kernel, timeSteps) );
 		auto t = time_call(recursive_stencil_2D<ImageSpace, Blur5_k>, recBuffer, kernel, timeSteps);
-		std::cout << "recursive: " << t << std::endl;
+		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
 	if (IT || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				for (unsigned j = 0; j < getH(itBuffer); ++j){
-					for (unsigned i = 0; i < getW(itBuffer); ++i){
+				for (unsigned i = 0; i < getW(itBuffer); ++i){
+		 			for (unsigned j = 0; j < getH(itBuffer); ++j){
 						kernel(itBuffer, i, j, t);
 					}
 				}
 			}
 		};
 
-		//TIME_CALL(it());
 		auto t = time_call(it);
-		std::cout << "iterative: " << t << std::endl;
+		std::cout << "iterative: " << t <<"ms" << std::endl;
+	}
+
+	if (INV || ALL){
+		auto it = [&] (){
+			for (unsigned t = 0; t < timeSteps; ++t){
+		 		for (unsigned j = 0; j < getH(itBuffer); ++j){
+					for (unsigned i = 0; i < getW(itBuffer); ++i){
+						kernel(invBuffer, i, j, t);
+					}
+				}
+			}
+		};
+
+		auto t = time_call(it);
+		std::cout << "inverted: " << t << "ms" <<std::endl;
+	}
+
+	if (ALL && VALIDATE){
+		if (recBuffer != itBuffer) std::cout << "VALIDATION FAILED" << std::endl;
+		else if (invBuffer != itBuffer) std::cout << "VALIDATION FAILED" << std::endl;
+		else std::cout << "VALIDATION OK" << std::endl;
 	}
 
 	// ~~~~~~~~~~~~~~~~ Plot and Validate  ~~~~~~~~~~~~~~~~~~~~~~~~~~
-	if (ALL){
-
+	if (VISUALIZE){
 
 		CImg<PixelType> recImage(recBuffer.getPointer(timeSteps%2), getW(recBuffer), getH(recBuffer));
-		CImg<PixelType> itImage(itBuffer.getPointer(timeSteps%2), getW(itBuffer), getH(itBuffer));
+		CImg<PixelType> itImage (itBuffer.getPointer(timeSteps%2), getW(itBuffer), getH(itBuffer));
+		CImg<PixelType> invImage(invBuffer.getPointer(timeSteps%2), getW(invBuffer), getH(invBuffer));
 
-		orgImage = orgImage.get_resize(800, 800, -100, -100, 1);
-		recImage = recImage.get_resize(800, 800, -100, -100, 1);
-		itImage = itImage.get_resize(800, 800, -100, -100, 1);
+		orgImage = orgImage.get_resize	(800, 800, -100, -100, 1);
+		recImage = recImage.get_resize	(800, 800, -100, -100, 1);
+		itImage = itImage.get_resize	(800, 800, -100, -100, 1);
+		invImage = invImage.get_resize	(800, 800, -100, -100, 1);
 
-		CImgDisplay original(orgImage, "original"), rec(recImage, "rec"), par(itImage, "iter"); 
-
-		if (recBuffer != itBuffer) std::cout << "VALIDATION FAILED" << std::endl;
-		else std::cout << "VALIDATION OK" << std::endl;
-
-
-		while (!original.is_closed() && !rec.is_closed() && !par.is_closed()){
+		CImgDisplay original(orgImage, "original"), rec(recImage, "rec"), par(itImage, "iter"), inv(invImage, "inverted loop");
+	
+		while (!original.is_closed()){
 			original.wait();
 		}
-		return 0;
-	}
+	}	
+
+	return 0;
 }
 
