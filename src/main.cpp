@@ -11,7 +11,9 @@
 
 using namespace stencil;
 
-typedef BufferSet<unsigned char, 2> ImageSpace;
+//typedef unsigned char PixelType;
+typedef double PixelType;
+typedef BufferSet<PixelType, 2> ImageSpace;
 
 namespace {
 
@@ -156,38 +158,45 @@ void parse_args(int argc, char *argv[]){
 }
 
 
+
+
 #include "CImg.h"
 using namespace cimg_library;
 int main(int argc, char *argv[]) {
 
-	// Input problem parameters
-	//CImg<unsigned char> orgImage("../eight.png");
-	//CImg<unsigned char> orgImage("../sixteen.png");
-	//CImg<unsigned char> orgImage("../emo.jpg");
-	//CImg<unsigned char> orgImage("../lena.png");
-	CImg<unsigned char> orgImage("../yoBW.png");
-	const int timeSteps = 12;
-	
+	// ~~~~~~~~~~~~~~~ Input problem parameters ~~~~~~~~~~~~~~~~~~~~~
+	//const char* input_file = "../eight.png";
+	//const char*  input_file = "../sixteen.png";
+	//const char*  input_file = "../emo.jpg";
+	//const char*  input_file = "../lena.png";
+	const char* input_file = "../yoBW.png";
+	//const char* input_file = "../skogafossBW.png";
+	const int timeSteps = 10;
+	parse_args(argc, argv);
+
+	// ~~~~~~~~~~~~~~~ Load image ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	CImg<PixelType> orgImage(input_file);
 	assert(orgImage.size ()  == (unsigned)orgImage.width() *  (unsigned)orgImage.height() && "only Grayscale allowed");
 
-	// create multidimensional buffer for flip-flop
-	ImageSpace recBuffer(std::vector<unsigned char>(orgImage.begin(), orgImage.end()), 
+	std::cout <<" execute " << input_file << " with " << timeSteps << " time steps" << std::endl;
+
+	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
+	ImageSpace recBuffer(std::vector<PixelType>(orgImage.begin(), orgImage.end()), 
 										{(unsigned)orgImage.width(), (unsigned)orgImage.height() } );
-	ImageSpace itBuffer(std::vector<unsigned char>(orgImage.begin(), orgImage.end()), 
+	ImageSpace itBuffer(std::vector<PixelType>(orgImage.begin(), orgImage.end()), 
 										{(unsigned)orgImage.width(), (unsigned)orgImage.height() } );
 	assert(orgImage.size () == itBuffer.getSize());
 	assert(orgImage.size () == recBuffer.getSize());
 
-	parse_args(argc, argv);
 
-	// create kernel
+	// ~~~~~~~~~~~~~~~~~ create kernel ~~~~~~~~~~~~~~~~~~~~~~~
 	//Blur3_k kernel;
 	Blur5_k kernel;
 	//Life_k kernel;
 	//Color_k kernel(timeSteps);
 	//Copy_k kernel;
 	
-
+	// ~~~~~~~~~~~~~~~~ RUN ~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if (REC || ALL){
 		std::cout << " ==== Recursive ==== " << std::endl;
 		TIME_CALL(recursive_stencil_2D(recBuffer, kernel, timeSteps));
@@ -209,12 +218,12 @@ int main(int argc, char *argv[]) {
 		TIME_CALL(seq());
 	}
 
-	// Copy back the data and plot
+	// ~~~~~~~~~~~~~~~~ Plot and Validate  ~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if (ALL){
 
 
-		CImg<unsigned char> recImage(recBuffer.getPointer(timeSteps%2), getW(recBuffer), getH(recBuffer));
-		CImg<unsigned char> itImage(itBuffer.getPointer(timeSteps%2), getW(itBuffer), getH(itBuffer));
+		CImg<PixelType> recImage(recBuffer.getPointer(timeSteps%2), getW(recBuffer), getH(recBuffer));
+		CImg<PixelType> itImage(itBuffer.getPointer(timeSteps%2), getW(itBuffer), getH(itBuffer));
 
 		orgImage = orgImage.get_resize(800, 800, -100, -100, 1);
 		recImage = recImage.get_resize(800, 800, -100, -100, 1);

@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <ctime>
 #include <chrono>
+#include <functional>
  
 
 #define TIME_CALL(FC) \
@@ -15,3 +16,4 @@
               << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / (1000.0)\
               << "ms\n";\
 	}
+

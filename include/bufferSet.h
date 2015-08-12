@@ -14,13 +14,15 @@ namespace stencil{
 	struct BufferSet: public utils::Printable{
 
 		static const unsigned copies = Copies;
-		const std::array<unsigned, Dimensions> dimensions;
+		static const unsigned dimensions = Dimensions;
+		const std::array<unsigned, Dimensions> dimension_sizes;
 		std::array<std::vector<Elem>, copies> storage;
+
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ Constructor  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		BufferSet(const std::vector<Elem>& data, const std::array<unsigned, Dimensions>& dimensions)
-			: dimensions(dimensions), storage({std::vector<Elem>(data.begin(), data.end())})
+		BufferSet(const std::vector<Elem>& data, const std::array<unsigned, Dimensions>& dimension_sizes)
+			: dimension_sizes(dimension_sizes), storage({std::vector<Elem>(data.begin(), data.end())})
 		{ 
 			for(int i=1; i < copies; ++i) {
 				//storage[i].insert(storage[i].begin(), data.begin(), data.end());
@@ -29,8 +31,8 @@ namespace stencil{
 
 		}
 
-		BufferSet(std::vector<Elem>&& data, const std::array<unsigned, Dimensions>& dimensions)
-			: dimensions(dimensions), storage({std::move(data)})
+		BufferSet(std::vector<Elem>&& data, const std::array<unsigned, Dimensions>& dimension_sizes)
+			: dimension_sizes(dimension_sizes), storage({std::move(data)})
 		{ 
 			for(int i=1; i < copies; ++i) {
 				storage[i].resize(getSize());
@@ -50,7 +52,7 @@ namespace stencil{
 
 		unsigned getSize(){
 			unsigned acum =1;
-			for (unsigned i =0; i< Dimensions; ++i) acum *= dimensions[i];
+			for (unsigned i =0; i< Dimensions; ++i) acum *= dimension_sizes[i];
 			return acum;
 		}
 
@@ -76,7 +78,7 @@ namespace stencil{
 		std::ostream& printTo(std::ostream& out) const{
 			
 			out << "Bufferset[";
-			for (const auto& i : dimensions) out << i << ",";
+			for (const auto& i : dimension_sizes) out << i << ",";
 			out << "]x" << copies;
 
 		//	out << " {";
@@ -94,21 +96,21 @@ namespace stencil{
 			inline typename std::enable_if< is_eq<D, N>::value, E&>::type
 
 		FOR_DIMENSION(1) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned t = 0){
-			assert(i<b.dimensions[0] && "i out of range");
+			assert(i<b.dimension_sizes[0] && "i out of range");
 			return b.storage[t%b.copies][i];
 		}
 
 		FOR_DIMENSION(2) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned t = 0){
-			assert(i<b.dimensions[0] && "i out of range");
-			assert(j<b.dimensions[1] && "j out of range");
-			return b.storage[t%b.copies][i+j*b.dimensions[0]];
+			assert(i<b.dimension_sizes[0] && "i out of range");
+			assert(j<b.dimension_sizes[1] && "j out of range");
+			return b.storage[t%b.copies][i+j*b.dimension_sizes[0]];
 		}
 		
 		FOR_DIMENSION(3) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned k, unsigned t = 0){
-			assert(i<b.dimensions[0] && "i out of range");
-			assert(j<b.dimensions[1] && "j out of range");
-			assert(k<b.dimensions[2] && "k out of range");
-			return b.storage[t%b.copies][i+j*b.dimensions[0]+k*b.dimensions[1]*b.dimensions[0]];
+			assert(i<b.dimension_sizes[0] && "i out of range");
+			assert(j<b.dimension_sizes[1] && "j out of range");
+			assert(k<b.dimension_sizes[2] && "k out of range");
+			return b.storage[t%b.copies][i+j*b.dimension_sizes[0]+k*b.dimension_sizes[1]*b.dimension_sizes[0]];
 		}
 		
 		#undef FOR_DIMENSION
@@ -118,13 +120,13 @@ namespace stencil{
 			inline typename std::enable_if< is_ge<D, N>::value, int>::type
 
 		FROM_DIMENSION(1) getW(BufferSet<E,D,C>& b){
-			return b.dimensions[0];
+			return b.dimension_sizes[0];
 		}
 		FROM_DIMENSION(2) getH(BufferSet<E,D,C>& b){
-			return b.dimensions[1];
+			return b.dimension_sizes[1];
 		}
 		FROM_DIMENSION(3) getD(BufferSet<E,D,C>& b){
-			return b.dimensions[2];
+			return b.dimension_sizes[2];
 		}
 
 		#undef FROM_DIMENSION
