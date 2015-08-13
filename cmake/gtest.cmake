@@ -3,7 +3,7 @@
 INCLUDE(ExternalProject)
 
 # Set default ExternalProject root directory
-SET_DIRECTORY_PROPERTIES(PROPERTIES EP_PREFIX ${CMAKE_BINARY_DIR}/third_party)
+SET_DIRECTORY_PROPERTIES(PROPERTIES EP_PREFIX ${CMAKE_BINARY_DIR}/third_party/gtest)
 
 # Add gtest
 # http://stackoverflow.com/questions/9689183/cmake-googletest
@@ -16,6 +16,8 @@ ExternalProject_Add(
     # CMAKE_ARGS -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
     #            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
     #            -Dgtest_force_shared_crt=ON
+    #CMAKE_ARGS -DGTEST_USE_OWN_TR1_TUPLE=1
+    CMAKE_ARGS -DGTEST_HAS_TR1_TUPLE=0
     # Disable install step
     INSTALL_COMMAND ""
     # Wrap download, configure and build steps in a script to log output
