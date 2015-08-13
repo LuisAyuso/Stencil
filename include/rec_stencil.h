@@ -10,8 +10,7 @@
 
 namespace stencil{
 
-	typedef Hyperspace<2> Zoid;
-
+	#define CUT 0
 
 	/**
 	 *	 VERSION 2, 
@@ -23,9 +22,12 @@ namespace stencil{
 	*/
 				
 	template <typename DataStorage, typename Kernel, unsigned Dim>
-	void recursive_stencil_aux(DataStorage& data, Kernel k, const Zoid& z, int t0, int t1){
+	void recursive_stencil_aux(DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
+
+		auto cut = CUT;
+		if (Dim != 0) cut =0;
 
 		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
 
@@ -73,7 +75,7 @@ namespace stencil{
 			//std::cout << " W cut: " << 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT << std::endl;
 
 			// Cut in M
-			if (deltaBase >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){
+			if (deltaBase >= cut + 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){
 
 				auto split = a + deltaBase /2;
 
@@ -88,7 +90,7 @@ namespace stencil{
 				
 			}
 			// Cut in W
-			else if (deltaTop >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){ 
+			else if (deltaTop >= cut + 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){ 
 
 				//std::cout << " cut in M " << std::endl;
 				const auto& subSpaces  = Target_Hyperspace::template split_W<Dim> (z, slopeDim.first, slopeDim.second);

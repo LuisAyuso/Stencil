@@ -201,9 +201,6 @@ namespace example_kernels{
 
 			}
 
-
-
-
 			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t){
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;

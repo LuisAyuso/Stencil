@@ -121,7 +121,8 @@ int main(int argc, char *argv[]) {
 	//using KernelType = example_kernels::Life_k<PixelType>;
 	//using KernelType = example_kernels::Blur3_k<PixelType>;
 	//using KernelType = example_kernels::Blur5_k<PixelType>;
-	using KernelType = example_kernels::BlurN_k<PixelType, 7>;
+	//using KernelType = example_kernels::BlurN_k<PixelType, 7>;
+	using KernelType = example_kernels::BlurN_k<PixelType, 9>;
 
 	KernelType kernel;
 

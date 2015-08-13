@@ -20,7 +20,7 @@ echo "algorithm;time-steps;time;cache-misses;L1-dcache-load-misses;L1-dcache-sto
 for REPETITIONS in `seq 1 10`
 do
 
-	for TIMESTEPS in 100 1000 5000 10000
+	for TIMESTEPS in 100 1000 2000 3000 
 	do
 		./Stencil -i $1 -r $TIMESTEPS > out 
 
