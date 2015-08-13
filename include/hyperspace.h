@@ -191,7 +191,6 @@ namespace stencil{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spliting tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		typedef std::vector<Hyperspace<Dimensions>> CutDim;
 		typedef std::array<Hyperspace<Dimensions>,3> CutDim_exact;
 
 		/**
@@ -244,6 +243,10 @@ namespace stencil{
 
 			return {left, right, central};
 		}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~ Generic cut with n dimensions ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+		typedef std::vector<Hyperspace<Dimensions>> CutDim;
 
 		template <unsigned Dim>
 		static inline CutDim split_1d(int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
