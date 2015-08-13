@@ -17,7 +17,7 @@ ExternalProject_Add(
     #            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
     #            -Dgtest_force_shared_crt=ON
     #CMAKE_ARGS -DGTEST_USE_OWN_TR1_TUPLE=1
-    CMAKE_ARGS -DGTEST_HAS_TR1_TUPLE=0
+    #CMAKE_ARGS -DGTEST_HAS_TR1_TUPLE=0
     # Disable install step
     INSTALL_COMMAND ""
     # Wrap download, configure and build steps in a script to log output

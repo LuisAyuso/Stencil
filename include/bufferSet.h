@@ -13,6 +13,7 @@ namespace stencil{
 	template <typename Elem, size_t Dimensions, unsigned Copies = 2>
 	struct BufferSet: public utils::Printable{
 
+		typedef Elem element_type;
 		static const unsigned copies = Copies;
 		static const unsigned dimensions = Dimensions;
 
@@ -85,8 +86,12 @@ namespace stencil{
 
 			if (buffer_size != o.buffer_size) return false;
 
-			for (int i = 0; i< buffer_size; ++i){
-				if (storage[i] != o.storage[i]) return false;
+			for (int c=0; c < Copies; ++c){
+				for ( auto i = 0; i< buffer_size; ++i) {
+					if (storage[c*buffer_size + i] != o.storage[c*buffer_size + i]){
+						return false;
+					}
+				}
 			}
 			return true;
 		}

@@ -34,26 +34,27 @@ namespace stencil{
 		assert(deltaT >= 0);
 
 		// BASE CASE
-		if (deltaT == 1){
+		if (deltaT <= 3){
 
-			int t = t0;
-			//for (int t = t0; t < t1; ++t){
-				int ia = z.a(0);
-				int ib = z.b(0);
-				int ja = z.a(1);
-				int jb = z.b(1);
+			int ia = z.a(0);
+			int ib = z.b(0);
+			int ja = z.a(1);
+			int jb = z.b(1);
 
-		
-				for (int i = ia; i < ib; ++i){
-					for (int j = ja; j < jb; ++j){
+			//int t = t0;
+			for (int t = t0; t < t1; ++t){
+
+				for (int j = ja; j < jb; ++j){
+					for (int i = ia; i < ib; ++i){
 						k(data, i, j, t);
 					}
 				}
-			//	ia += z.da(0);
-			//	ib += z.db(0);
-			//	ja += z.da(1);
-			//	jb += z.db(1);
-			//}
+				ia += z.da(0);
+				ib += z.db(0);
+				ja += z.da(1);
+				jb += z.db(1);
+			}
+
 		}
 		
 		else{
@@ -68,7 +69,7 @@ namespace stencil{
 
 			//std::cout << " a:" << a << " b: "<< b << " da:" << da << " db:" << db << std::endl;
 			//std::cout << " deltaBase:" << deltaBase << " deltaTop:" << deltaTop <<  " deltaT:" << deltaT<< std::endl;
-			//std::cout << " M cut: " << (ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT << std::endl;
+			//std::cout << " M cut: " << 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT << std::endl;
 			//std::cout << " W cut: " << 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT << std::endl;
 
 			// Cut in M
@@ -129,35 +130,10 @@ namespace stencil{
 		std::array<int, Kernel::dimensions> leftSlopes;
 		std::array<int, Kernel::dimensions> rightSlopes;
 
-//		int smallerSlope = k.getSlope(0).first;
-//		for (int d = 0; d < Kernel::dimensions; ++d){
-//			const auto& x = k.getSlope(d);
-//			leftSlopes[d] = x.first;
-//			rightSlopes[d] = x.second;
-//			if (smallerSlope = MIN(smallerSlope, ABS(x.first))  );
-//			if (smallerSlope = MIN(smallerSlope, ABS(x.second)) );
-//		}
-//		int smallerSide = MIN(w,h);
-//		if (smallerSlope == 0) smallerSlope =1;
-
 		// notice that the original piramid has perfect vertical sides
 		Hyperspace<2> z ({0,0}, {w,h}, {0,0}, {0,0} );
 
 		recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
-
-
-		// well, if the time steps are larger that one full piramid, then we 
-		// better cut slices of full computation
-//		int t0 = 0;
-//		auto step = MIN(t, (smallerSide/ (2*smallerSlope)) );
-//		int t1 = step;
-//		while (t0 < t){
-//
-//			recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, t0, t1);
-//
-//			t0+=step;
-//			t1 = MIN(t, t1+step);
-//		}
 	}
 
 } // stencil namespace
