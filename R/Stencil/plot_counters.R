@@ -1,3 +1,4 @@
+require("ggplot2")
 
 plot_measure <- function(data, measure){
   
