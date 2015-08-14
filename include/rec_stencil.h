@@ -132,6 +132,13 @@ namespace stencil{
 		// notice that the original piramid has perfect vertical sides
 		Hyperspace<2> z ({0,0}, {w,h}, {0,0}, {0,0} );
 
+		auto z2 = data.getGlobalHyperspace();
+
+		std::cout << z << std::endl;
+		std::cout << z2 << std::endl;
+
+		abort();
+
 		recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
 	}
 

@@ -72,12 +72,25 @@ namespace stencil{
 			return storage + buffer_size*copy;
 		}
 
-//		std::vector<Elem> getData(unsigned copy = 0){
-//			return std::vector<Elem>(getPointer(copy), buffer_size);
-//		}
-
 		unsigned getSize(){
 			return buffer_size;
+		}
+
+		Hyperspace<dimensions> getGlobalHyperspace(){
+
+			std::array<int, dimensions> a;
+			std::array<int, dimensions> b;
+			std::array<int, dimensions> da;
+			std::array<int, dimensions> db;
+
+			for (int i =0; i < dimensions; ++i){
+				a[i] = 0;
+				b[i] = dimension_sizes[i];
+				da[i] = 0;
+				db[i] = 0;
+			}
+
+			return Hyperspace<dimensions> (a, b, da, db);
 		}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ Comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
