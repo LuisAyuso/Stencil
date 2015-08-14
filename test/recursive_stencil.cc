@@ -149,3 +149,26 @@ TEST(Stencil2D, Blur10){
 	for (auto j = 1; j < SIZE; j ++)
 		EXPECT_EQ( getElem(buff1, i, j, 1), getElem(buff2, i, j, 1));
 }
+
+
+
+namespace {
+
+	template< typename Elem> 
+	struct Translate_3d_k : public Kernel<BufferSet<Elem,3>, 3, Translate_3d_k<Elem>>{
+
+		void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned k, unsigned t){
+			if (0> (int)i-1)		getElem(data, i, j, k, t+1) = 0;
+			else if (0> (int)j-1)	getElem(data, i, j, k, t+1) = 0;
+			else if (0> (int)k-1)	getElem(data, i, j, k, t+1) = 0;
+			else 					getElem(data, i, j, k, t+1) = getElem(data, i-1, j-1, k-1, t);
+		}
+
+		std::pair<int,int> getSlope(unsigned dimension){
+			return {1,-1};
+		}
+	};
+
+}
+
+
