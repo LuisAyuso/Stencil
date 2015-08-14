@@ -7,6 +7,8 @@
 #include "tools.h"
 #include "print.h"
 
+#include "hyperspace.h"
+
 namespace stencil{
 	
 

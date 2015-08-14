@@ -12,28 +12,27 @@ namespace stencil{
 
 	#define CUT 10
 
-	/**
-	 *	 VERSION 2, 
-	 *		change the order of splits:
-	 *			deltaT == 1 Base case
-	 *			other case:
-	 *			 if fits: space cut
-	 *			 other case : time cut
-	*/
-				
-	template <typename DataStorage, typename Kernel, unsigned Dim>
-	void recursive_stencil_aux(DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
-		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
+	#define FOR_DIMENSION(N) \
+	template <typename DataStorage, typename Kernel> \
+			inline typename std::enable_if< is_eq<Kernel::dimensions, N>::value, void>::type
 
-		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
+		FOR_DIMENSION(1) base_case (DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
-		auto deltaT = (int)t1-t0;
-		assert(t1 >= t0);
-		assert(deltaT >= 0);
+			int ia = z.a(0);
+			int ib = z.b(0);
+			//int t = t0;
+			for (int t = t0; t < t1; ++t){
 
-		// BASE CASE
-		if (deltaT <= 3){
+				for (int i = ia; i < ib; ++i){
+						k(data, i, t);
+				}
+				ia += z.da(0);
+				ib += z.db(0);
+			}
+		}
+
+		FOR_DIMENSION(2) base_case (DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -53,7 +52,53 @@ namespace stencil{
 				ja += z.da(1);
 				jb += z.db(1);
 			}
+		}
 
+		FOR_DIMENSION(3) base_case (DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+			int ia = z.a(0);
+			int ib = z.b(0);
+			int ja = z.a(1);
+			int jb = z.b(1);
+			int wa = z.a(2);
+			int wb = z.b(2);
+
+			//int t = t0;
+			for (int t = t0; t < t1; ++t){
+
+				for (int w = wa; w < wb; ++w){
+					for (int j = ja; j < jb; ++j){
+						for (int i = ia; i < ib; ++i){
+							k(data, i, j, t);
+						}
+					}
+				}
+				ia += z.da(0);
+				ib += z.db(0);
+				ja += z.da(1);
+				jb += z.db(1);
+				wa += z.da(2);
+				wb += z.db(2);
+			}
+		}
+
+	#undef FOR_DIMENSION
+	
+	template <typename DataStorage, typename Kernel, unsigned Dim>
+	inline void recursive_stencil_aux(DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
+
+		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
+
+		auto deltaT = (int)t1-t0;
+		assert(t1 >= t0);
+		assert(deltaT >= 0);
+
+		// BASE CASE
+		if (deltaT <= 3){
+
+			base_case <DataStorage, Kernel>  (data, k, z, t0, t1);
 		}
 		
 		else{
@@ -124,20 +169,8 @@ namespace stencil{
 	template <typename DataStorage, typename Kernel>
 	void recursive_stencil_2D(DataStorage& data, Kernel k, unsigned t){
 
-		int w = getW(data), h = getH(data);
-
-		std::array<int, Kernel::dimensions> leftSlopes;
-		std::array<int, Kernel::dimensions> rightSlopes;
-
 		// notice that the original piramid has perfect vertical sides
-		Hyperspace<2> z ({0,0}, {w,h}, {0,0}, {0,0} );
-
-		auto z2 = data.getGlobalHyperspace();
-
-		std::cout << z << std::endl;
-		std::cout << z2 << std::endl;
-
-		abort();
+		auto z = data.getGlobalHyperspace();
 
 		recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
 	}

@@ -95,3 +95,57 @@ TEST(Stencil2D, Translate){
 	for (auto j = 2; j < SIZE; j ++)
 		EXPECT_EQ( getElem(buff1, i-2, j-2, 0), getElem(buff2, i, j, 0));
 }
+
+
+TEST(Stencil2D, Blur){
+
+	typedef int Type;
+	const int SIZE = 100;
+
+	auto data  = initData<Type> (SIZE*SIZE);
+
+	BufferSet<Type, 2> buff1 ({SIZE, SIZE}, data);
+	BufferSet<Type, 2> buff2 ({SIZE, SIZE}, data);
+
+
+	Blur3_k<Type> kernel;
+
+	recursive_stencil_2D<BufferSet<Type, 2>, Blur3_k<Type>>( buff1, kernel, 1);
+
+
+	for (int i = 0; i < SIZE; ++i)
+	for (int j = 0; j < SIZE; ++j)
+		kernel(buff2, i, j, 0);
+
+
+	for (auto i = 1; i < SIZE; i ++)
+	for (auto j = 1; j < SIZE; j ++)
+		EXPECT_EQ( getElem(buff1, i, j, 1), getElem(buff2, i, j, 1));
+}
+
+TEST(Stencil2D, Blur10){
+
+	typedef double Type;
+	const int SIZE = 100;
+
+	auto data  = initData<Type> (SIZE*SIZE);
+
+	BufferSet<Type, 2> buff1 ({SIZE, SIZE}, data);
+	BufferSet<Type, 2> buff2 ({SIZE, SIZE}, data);
+
+
+	Blur3_k<Type> kernel;
+
+	recursive_stencil_2D<BufferSet<Type, 2>, Blur3_k<Type>>( buff1, kernel, 10);
+
+
+	for (int t = 0; t < 10; ++t)
+	for (int i = 0; i < SIZE; ++i)
+	for (int j = 0; j < SIZE; ++j)
+		kernel(buff2, i, j, t);
+
+
+	for (auto i = 1; i < SIZE; i ++)
+	for (auto j = 1; j < SIZE; j ++)
+		EXPECT_EQ( getElem(buff1, i, j, 1), getElem(buff2, i, j, 1));
+}
