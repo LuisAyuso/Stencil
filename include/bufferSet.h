@@ -47,15 +47,7 @@ namespace stencil{
 			memcpy(storage, data, buffer_size * sizeof(Elem));
 		}
 
-		BufferSet(const BufferSet<Elem, Dimensions, Copies>& o)
-		: dimension_sizes(o.dimension_sizes), buffer_size(o.buffer_size)
-		{
-			storage = new Elem[buffer_size*copies];
-			memcpy(storage, o.storage, buffer_size*copies * sizeof(Elem));
-		//	for (int i = 0; i < buffer_size*copies; ++i){
-		//		storage[i] = o.storage[i];
-		//	}
-		}
+		BufferSet(const BufferSet<Elem, Dimensions, Copies>& o) = delete;
 		
 		BufferSet(BufferSet<Elem, Dimensions, Copies>&& o)
 		: dimension_sizes(o.dimension_sizes), buffer_size(o.buffer_size), storage(nullptr)

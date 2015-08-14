@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
 	if (IT || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				for (unsigned i = 0; i < getW(iteBuffer); ++i){
+				P_FOR ( i, 0, getW(iteBuffer), 1) {
 		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
 						kernel(iteBuffer, i, j, t);
 					}
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
 	if (INV || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-		 		for (unsigned j = 0; j < getH(iteBuffer); ++j){
+				P_FOR ( j, 0, getH(iteBuffer), 1) {
 					for (unsigned i = 0; i < getW(iteBuffer); ++i){
 						kernel(invBuffer, i, j, t);
 					}
