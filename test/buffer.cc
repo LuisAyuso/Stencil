@@ -15,7 +15,7 @@ TEST(Buffer, Constructor){
 
 	// test loaded data
 		for (int i=0; i<5; ++i){
-			EXPECT_EQ(i, getElem(b, i));
+			EXPECT_EQ(i, getElem(b, i, 0));
 		}
 
 	// modify data:
@@ -43,7 +43,7 @@ TEST(Buffer, Constructor){
 
 		for (int i=0; i<5; ++i)
 			for (int j=0; j<2; ++j)
-				EXPECT_EQ(getElem(b, i, j), i);
+				EXPECT_EQ(getElem(b, i, j, 0), i);
 
 
 		// modify
@@ -58,7 +58,7 @@ TEST(Buffer, Constructor){
 		// check
 		for (int i=0; i<5; ++i)
 			for (int j=0; j<2; ++j)
-				EXPECT_EQ(getElem(b, i, j), 0);
+				EXPECT_EQ(getElem(b, i, j, 0), 0);
 
 		for (int i=0; i<5; ++i)
 			for (int j=0; j<2; ++j)
@@ -76,7 +76,7 @@ TEST(Buffer, Constructor){
 		for (int i=0; i<5; ++i)
 			for (int j=0; j<2; ++j)
 				for (int k=0; k<3; ++k)
-					EXPECT_EQ(getElem(b, i, j, k), i);
+					EXPECT_EQ(getElem(b, i, j, k, 0), i);
 
 		// modify
 		for (int i=0; i<5; ++i)
@@ -185,14 +185,14 @@ TEST(Buffer, Move){
 
 	// test loaded data
 		for (int i=0; i<5; ++i){
-			EXPECT_EQ(getElem(b, i), i);
+			EXPECT_EQ(getElem(b, i, 0), i);
 		}
 
 		auto b2 = std::move(b);
 
 	// test loaded data
 		for (int i=0; i<5; ++i){
-			EXPECT_EQ(getElem(b2, i), i);
+			EXPECT_EQ(getElem(b2, i, 0), i);
 		}
 
 	}
@@ -207,14 +207,14 @@ TEST(Buffer, Move){
 
 		for (int i=0; i<5; ++i)
 			for (int j=0; j<2; ++j)
-				EXPECT_EQ(getElem(b, i, j), i);
+				EXPECT_EQ(getElem(b, i, j, 0), i);
 
 
 		auto b2 = std::move(b);
 
 		for (int i=0; i<5; ++i)
 			for (int j=0; j<2; ++j)
-				EXPECT_EQ(getElem(b2, i, j), i);
+				EXPECT_EQ(getElem(b2, i, j, 0), i);
 	}
 
 	{
@@ -228,14 +228,14 @@ TEST(Buffer, Move){
 		for (int i=0; i<5; ++i)
 			for (int j=0; j<2; ++j)
 				for (int k=0; k<2; ++k)
-					EXPECT_EQ(getElem(b, i, j, k), i);
+					EXPECT_EQ(getElem(b, i, j, k, 0), i);
 
 		auto b2 = std::move(b);
 
 		for (int i=0; i<5; ++i)
 			for (int j=0; j<2; ++j)
 				for (int k=0; k<2; ++k)
-					EXPECT_EQ(getElem(b2, i, j, k), i);
+					EXPECT_EQ(getElem(b2, i, j, k, 0), i);
 	}
 }
 

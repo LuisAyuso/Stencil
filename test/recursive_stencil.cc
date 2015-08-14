@@ -284,14 +284,14 @@ namespace {
 			if (j == 0 || j == getH(data)-1) { getElem(data, i, j, k, w, t+1) =  getElem (data, i, j, k, w, t); return; }
 			if (k == 0 || k == getD(data)-1) { getElem(data, i, j, k, w, t+1) =  getElem (data, i, j, k, w, t); return; }
 
-			getElem(data, i, j, k, t+1) = 
+			getElem(data, i, j, k, w, t+1) = 
 					getElem (data, i, j, k + 1, w, t) +
 					getElem (data, i, j, k - 1, w, t) +
 					getElem (data, i, j + 1, k, w, t) +
 					getElem (data, i, j - 1, k, w, t) +
 					getElem (data, i + 1, j, k, w, t) +
 					getElem (data, i - 1, j, k, w, t)
-					- 6.0 * getElem (data, i, j, k, t) / (fac*fac);
+					- 6.0 * getElem (data, i, j, k, w, t) / (fac*fac);
 
 		//	std::cout << getElem(data, i, j, k, t+1)  << ":" << getElem(data, i, j, k, t) <<  "@ (" << i << "," << j << "," << k << ")" << std::endl;
 		}

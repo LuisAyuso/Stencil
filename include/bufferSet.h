@@ -47,6 +47,7 @@ namespace stencil{
 			memcpy(storage, data, buffer_size * sizeof(Elem));
 		}
 
+        // do not allow copy
 		BufferSet(const BufferSet<Elem, Dimensions, Copies>& o) = delete;
 		
 		BufferSet(BufferSet<Elem, Dimensions, Copies>&& o)
@@ -144,27 +145,27 @@ namespace stencil{
 			template<typename E, size_t D, unsigned C>\
 			inline typename std::enable_if< is_eq<D, N>::value, E&>::type
 
-		FOR_DIMENSION(1) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned t = 0){
+		FOR_DIMENSION(1) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned t){
 			assert(i<b.dimension_sizes[0] && "i out of range");
 			assert(b.buffer_size && "accessing invalidated buffer");
 			return b.storage[(b.buffer_size * (t%b.copies) ) + i];
 		}
 
-		FOR_DIMENSION(2) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned t = 0){
+		FOR_DIMENSION(2) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned t){
 			assert(i<b.dimension_sizes[0] && "i out of range");
 			assert(j<b.dimension_sizes[1] && "j out of range");
 			assert(b.buffer_size && "accessing invalidated buffer");
 			return b.storage[b.buffer_size*(t%b.copies) + i+(j*b.dimension_sizes[0])];
 		}
 		
-		FOR_DIMENSION(3) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned k, unsigned t = 0){
+		FOR_DIMENSION(3) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned k, unsigned t){
 			assert(i<b.dimension_sizes[0] && "i out of range");
 			assert(j<b.dimension_sizes[1] && "j out of range");
 			assert(k<b.dimension_sizes[2] && "k out of range");
 			return b.storage[b.buffer_size*(t%b.copies) + i+(j*b.dimension_sizes[0])+(k*b.dimension_sizes[1]*b.dimension_sizes[0])];
 		}
 
-		FOR_DIMENSION(4) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned k, unsigned w, unsigned t = 0){
+		FOR_DIMENSION(4) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned k, unsigned w, unsigned t){
 			assert(i<b.dimension_sizes[0] && "i out of range");
 			assert(j<b.dimension_sizes[1] && "j out of range");
 			assert(k<b.dimension_sizes[2] && "k out of range");

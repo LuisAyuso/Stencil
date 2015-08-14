@@ -26,11 +26,8 @@
 	#define PARALLEL_CTX \
 		{}
 
-	template<typename F, typename... ARGS>
-	inline void SPAWN (F f, ARGS& ... args){
-		f(args...);
-	}
-
+    #define SPAWN(f, ...) \
+        f(__VA_ARGS__)
 
 	#define SYNC \
 		{}
@@ -44,26 +41,29 @@
 
 #ifdef _OPENMP
 
+// macro tools, boilerplate
 #define STR(x) #x
 #define STRINGIFY(x) STR(x) 
+#define CONCATENATE_DETAIL(x, y) x##y
+#define CONCATENATE(x, y) CONCATENATE_DETAIL(x, y)
+#define MAKE_UNIQUE(x) CONCATENATE(x, __LINE__ )
 
+	#include <omp.h>
+    
 	#define PARALLEL_CTX \
 		_Pragma( STRINGIFY(  omp parallel )) \
-		_Pragma( STRINGIFY(  omp single nowait ))
+		_Pragma( STRINGIFY(  omp single  ))
 	
 
-	template<typename F, typename... ARGS>
-	inline void SPAWN (F f, ARGS& ... args){
+    #define SPAWN(f, ...) \
+        auto MAKE_UNIQUE(wrap) = [&] () { f(__VA_ARGS__); }; \
+		_Pragma( STRINGIFY(  omp task untied )) \
+        MAKE_UNIQUE(wrap)() \
 
-		// Gcc < 4.9 does not like this
-		auto wrap = [&] { f(args...); };
-	
-		#pragma omp task
-		wrap();
-	}
 
 	#define SYNC \
 		_Pragma( STRINGIFY( omp taskwait ) )
+
 
 	#define P_FOR(it, B, E, S) \
 		_Pragma( STRINGIFY(  omp parallel )) \

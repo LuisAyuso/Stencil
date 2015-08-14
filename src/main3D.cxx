@@ -15,9 +15,45 @@ using namespace stencil;
 
 // #######################################################################################
 
+template <typename Elem, unsigned Size>
+struct Voxel {
+
+    Elem elems [Size];
+
+    Voxel& operator= (float v){
+        for (int i = 0; i < Size; i++)
+            elems[i] = (Elem)v;
+        return *this;
+    }
+    Voxel operator+ (const Voxel& o) const{
+        Voxel<Elem, Size> res;
+        for (int i = 0; i < Size; i++)
+            res.elems[i] = elems[i] + o.elems[i];
+        return res;
+    }
+    Voxel operator/ (double d) const{
+        Voxel<Elem, Size> res;
+        for (int i = 0; i < Size; i++)
+            res.elems[i] = elems[i] / d;
+        return res;
+    }
+    
+    bool operator ==  (const Voxel& o) const{
+        for (int i = 0; i < Size; i++)
+            if( elems[i] != o.elems[i]) return false;
+        return true;
+    }
+    bool operator !=  (const Voxel& o) const{
+        return !(*this == o);
+    }
+
+};
+
 //typedef unsigned char PixelType;
 //typedef float PixelType;
-typedef double PixelType;
+//typedef double PixelType;
+//typedef Voxel<char,3> PixelType;
+typedef Voxel<double,16> PixelType;
 typedef BufferSet<PixelType, 3> ImageSpace;
 
  // #######################################################################################

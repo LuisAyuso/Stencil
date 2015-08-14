@@ -67,9 +67,9 @@ namespace example_kernels{
 
 			double fac = 2.0;
 	
-			if (i == 0 || i == getW(data)-1) { getElem(data, i, j, k, t+1) =  getElem (data, i, j, k); return; }
-			if (j == 0 || j == getH(data)-1) { getElem(data, i, j, k, t+1) =  getElem (data, i, j, k); return; }
-			if (k == 0 || k == getD(data)-1) { getElem(data, i, j, k, t+1) =  getElem (data, i, j, k); return; }
+			if (i == 0 || i == getW(data)-1) { getElem(data, i, j, k, t+1) =  getElem (data, i, j, k, t); return; }
+			if (j == 0 || j == getH(data)-1) { getElem(data, i, j, k, t+1) =  getElem (data, i, j, k, t); return; }
+			if (k == 0 || k == getD(data)-1) { getElem(data, i, j, k, t+1) =  getElem (data, i, j, k, t); return; }
 
 			getElem(data, i, j, k, t+1) = 
 					getElem (data, i, j, k + 1, t) +
