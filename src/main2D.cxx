@@ -128,8 +128,8 @@ int main(int argc, char *argv[]) {
 
 	// ~~~~~~~~~~~~~~~~ RUN ~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if (REC || ALL){
-		//TIME_CALL( recursive_stencil_2D( recBuffer, kernel, timeSteps) );
-		auto t = time_call(recursive_stencil_2D<ImageSpace, KernelType>, recBuffer, kernel, timeSteps);
+		//TIME_CALL( recursive_stencil( recBuffer, kernel, timeSteps) );
+		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, kernel, timeSteps);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 

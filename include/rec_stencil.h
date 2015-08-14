@@ -8,10 +8,17 @@
 #include "tools.h"
 
 
+
+#ifndef CUT 
+#  define CUT 10
+#endif 
+
+
+
 namespace stencil{
 
-	#define CUT 10
 
+namespace detail {
 
 	#define FOR_DIMENSION(N) \
 	template <typename DataStorage, typename Kernel> \
@@ -69,7 +76,7 @@ namespace stencil{
 				for (int w = wa; w < wb; ++w){
 					for (int j = ja; j < jb; ++j){
 						for (int i = ia; i < ib; ++i){
-							k(data, i, j, t);
+							k(data, i, j, w, t);
 						}
 					}
 				}
@@ -165,14 +172,16 @@ namespace stencil{
 		}
 	}
 
+} // detail
+
 
 	template <typename DataStorage, typename Kernel>
-	void recursive_stencil_2D(DataStorage& data, Kernel k, unsigned t){
+	void recursive_stencil(DataStorage& data, Kernel k, unsigned t){
 
 		// notice that the original piramid has perfect vertical sides
 		auto z = data.getGlobalHyperspace();
 
-		recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
+		detail::recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
 	}
 
 } // stencil namespace
