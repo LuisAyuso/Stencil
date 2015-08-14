@@ -15,13 +15,13 @@ namespace example_kernels{
 		template< typename Elem> 
 		struct Copy_k : public Kernel<BufferSet<Elem,2>, 2, Copy_k<Elem>>{
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t){
+			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
 
 				auto pix = getElem(data, i, j, 0);
 				getElem(data, i, j, 1) = pix;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension){
+			std::pair<int,int> getSlope(unsigned dimension) const{
 				return {0,0};
 			}
 		};
@@ -31,7 +31,7 @@ namespace example_kernels{
 		template< typename Elem> 
 		struct Life_k : public Kernel<BufferSet<Elem,2>, 2, Life_k<Elem>>{
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t){
+			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				unsigned sum = 0;
@@ -53,7 +53,7 @@ namespace example_kernels{
 				}
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension){
+			std::pair<int,int> getSlope(unsigned dimension) const{
 				return {1,-1};
 			}
 		};
@@ -67,11 +67,11 @@ namespace example_kernels{
 
 			Color_k ( Elem maxValue) : maxValue(maxValue) {}
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t){
+			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
 				getElem(data, i, j, t+1) = t%maxValue;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension){
+			std::pair<int,int> getSlope(unsigned dimension) const{
 				return {1,-1};
 			}
 		};
@@ -83,7 +83,7 @@ namespace example_kernels{
 
 			static const float Kcoeff[3][3];
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t){
+			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
@@ -102,7 +102,7 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension){
+			std::pair<int,int> getSlope(unsigned dimension) const{
 				return {1,-1};
 			}
 		};
@@ -117,7 +117,7 @@ namespace example_kernels{
 
 			static const float Kcoeff[5][5];
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t){
+			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
@@ -136,7 +136,7 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension){
+			std::pair<int,int> getSlope(unsigned dimension) const{
 				return {2,-2};
 			}
 		};
@@ -201,7 +201,7 @@ namespace example_kernels{
 
 			}
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t){
+			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
@@ -235,7 +235,7 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension){
+			std::pair<int,int> getSlope(unsigned dimension) const{
 				return {slope,-slope};
 			}
 		};

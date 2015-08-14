@@ -24,19 +24,22 @@ namespace stencil{
 		#define FOR_DIMENSION(N) \
 			std::enable_if< is_eq<Dimensions, N>::value, void>
 
-		FOR_DIMENSION(1) operator() (Data& data, unsigned i, unsigned t){
+		FOR_DIMENSION(1) operator() (Data& data, int i, int t) const{
 			static_cast<Parent*>(this)->operator() (data, i, t);
 		}
-		FOR_DIMENSION(2) operator() (Data& data, unsigned i, unsigned j, unsigned t){
-			static_cast<Parent*>(this)->operator() (data, i, t);
+		FOR_DIMENSION(2) operator() (Data& data, int i, int j, int t) const{
+			static_cast<Parent*>(this)->operator() (data, i, j, t);
 		}
-		FOR_DIMENSION(3) operator() (Data& data, unsigned i, unsigned j, unsigned k, unsigned t){
-			static_cast<Parent*>(this)->operator() (data, i, t);
+		FOR_DIMENSION(3) operator() (Data& data, int i, int j, int k, int t) const{
+			static_cast<Parent*>(this)->operator() (data, i, j, k, t);
+		}
+		FOR_DIMENSION(4) operator() (Data& data, int i, int j, int k, int w, int t) const{
+			static_cast<Parent*>(this)->operator() (data, i, j, k, w, t);
 		}
 
 		#undef FOR_DIMENSION
 		
-		std::pair<int,int> getSlope(unsigned dimension){
+		std::pair<int,int> getSlope(unsigned dimension)const {
 			return static_cast<Parent*>(this)->getSlope(dimension);
 		}
 

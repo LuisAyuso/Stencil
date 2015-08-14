@@ -24,7 +24,7 @@ namespace detail {
 	template <typename DataStorage, typename Kernel> \
 			inline typename std::enable_if< is_eq<Kernel::dimensions, N>::value, void>::type
 
-		FOR_DIMENSION(1) base_case (DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+		FOR_DIMENSION(1) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -32,14 +32,14 @@ namespace detail {
 			for (int t = t0; t < t1; ++t){
 
 				for (int i = ia; i < ib; ++i){
-						k(data, i, t);
+						kernel(data, i, t);
 				}
 				ia += z.da(0);
 				ib += z.db(0);
 			}
 		}
 
-		FOR_DIMENSION(2) base_case (DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+		FOR_DIMENSION(2) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -51,7 +51,7 @@ namespace detail {
 
 				for (int j = ja; j < jb; ++j){
 					for (int i = ia; i < ib; ++i){
-						k(data, i, j, t);
+						kernel(data, i, j, t);
 					}
 				}
 				ia += z.da(0);
@@ -61,22 +61,22 @@ namespace detail {
 			}
 		}
 
-		FOR_DIMENSION(3) base_case (DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+		FOR_DIMENSION(3) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 			int ia = z.a(0);
 			int ib = z.b(0);
 			int ja = z.a(1);
 			int jb = z.b(1);
-			int wa = z.a(2);
-			int wb = z.b(2);
+			int ka = z.a(2);
+			int kb = z.b(2);
 
 			//int t = t0;
 			for (int t = t0; t < t1; ++t){
 
-				for (int w = wa; w < wb; ++w){
+				for (int k = ka; k < kb; ++k){
 					for (int j = ja; j < jb; ++j){
 						for (int i = ia; i < ib; ++i){
-							k(data, i, j, w, t);
+							kernel(data, i, j, k, t);
 						}
 					}
 				}
@@ -84,15 +84,50 @@ namespace detail {
 				ib += z.db(0);
 				ja += z.da(1);
 				jb += z.db(1);
-				wa += z.da(2);
-				wb += z.db(2);
+				ka += z.da(2);
+				kb += z.db(2);
 			}
 		}
+
+		FOR_DIMENSION(4) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+			int ia = z.a(0);
+			int ib = z.b(0);
+			int ja = z.a(1);
+			int jb = z.b(1);
+			int ka = z.a(2);
+			int kb = z.b(2);
+			int wa = z.a(3);
+			int wb = z.b(3);
+
+			//int t = t0;
+			for (int t = t0; t < t1; ++t){
+
+				for (int w = wa; w < wb; ++w){
+					for (int k = ka; k < kb; ++k){
+						for (int j = ja; j < jb; ++j){
+							for (int i = ia; i < ib; ++i){
+								kernel(data, i, j, k, w, t);
+							}
+						}
+					}
+				}
+				ia += z.da(0);
+				ib += z.db(0);
+				ja += z.da(1);
+				jb += z.db(1);
+				ka += z.da(2);
+				kb += z.db(2);
+				wa += z.da(3);
+				wb += z.db(3);
+			}
+		}
+
 
 	#undef FOR_DIMENSION
 	
 	template <typename DataStorage, typename Kernel, unsigned Dim>
-	inline void recursive_stencil_aux(DataStorage& data, Kernel k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_aux(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 
@@ -176,7 +211,7 @@ namespace detail {
 
 
 	template <typename DataStorage, typename Kernel>
-	void recursive_stencil(DataStorage& data, Kernel k, unsigned t){
+	void recursive_stencil(DataStorage& data, const Kernel& k, unsigned t){
 
 		// notice that the original piramid has perfect vertical sides
 		auto z = data.getGlobalHyperspace();

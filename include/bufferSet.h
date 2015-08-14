@@ -124,9 +124,22 @@ namespace stencil{
 			out << "](" << buffer_size<< "elems)x" << copies;
 
 			for (int c=0; c < Copies; ++c){
-				out << " {";
-				for ( auto i = 0; i< buffer_size; ++i) out << storage[c*buffer_size + i] << ",";
-				out << "}";
+				out << " {\n";
+				for ( auto i = 0; i< buffer_size; ++i) {
+					
+					if(i!=0){
+						auto x = i;
+						for (auto d = 0; d< dimensions; ++d) {
+							if ((x % dimension_sizes[d]) == 0) {
+								std::cout << "\n";
+								x = x/dimension_sizes[d];
+							}	
+							else break;
+						}
+					}
+					out << storage[c*buffer_size + i] << ",";
+				}
+				out << "\n}";
 			}
 
 			return out;
@@ -157,6 +170,14 @@ namespace stencil{
 			assert(j<b.dimension_sizes[1] && "j out of range");
 			assert(k<b.dimension_sizes[2] && "k out of range");
 			return b.storage[b.buffer_size*(t%b.copies) + i+(j*b.dimension_sizes[0])+(k*b.dimension_sizes[1]*b.dimension_sizes[0])];
+		}
+
+		FOR_DIMENSION(4) getElem(BufferSet<E,D,C>& b, unsigned i, unsigned j, unsigned k, unsigned w, unsigned t = 0){
+			assert(i<b.dimension_sizes[0] && "i out of range");
+			assert(j<b.dimension_sizes[1] && "j out of range");
+			assert(k<b.dimension_sizes[2] && "k out of range");
+			return b.storage[b.buffer_size*(t%b.copies) + i+(j*b.dimension_sizes[0])+(k*b.dimension_sizes[1]*b.dimension_sizes[0]) + 
+										(w*b.dimension_sizes[2]*b.dimension_sizes[1]*b.dimension_sizes[0])];
 		}
 		
 		#undef FOR_DIMENSION
