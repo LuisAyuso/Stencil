@@ -20,6 +20,8 @@ namespace stencil{
 	template <typename Data, unsigned Dimensions, typename Parent>
 	struct Kernel{
 
+		// FIXME: i just found that this is actually never used, since the recusive algorithm is instanciated for the specific routine
+		// 			this is not bad, i leave here the kernel anyway to model how it should look like
 
 		#define FOR_DIMENSION(N) \
 			std::enable_if< is_eq<Dimensions, N>::value, void>

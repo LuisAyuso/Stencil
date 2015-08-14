@@ -33,8 +33,8 @@ add_dependencies("Stencil2D" cimg)
 target_link_libraries("Stencil2D" ${X11_X11_LIB})
 
 # 3d exec
-#add_executable("Stencil3D" "src/main3D.cxx" ${sources} )
-#add_dependencies("Stencil3D" cimg)
+add_executable("Stencil3D" "src/main3D.cxx" ${sources} )
+add_dependencies("Stencil3D" cimg)
 
 
 file(GLOB_RECURSE test_sources "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cc" )

@@ -35,7 +35,7 @@ bool REC = false, IT = false, INV = false, ALL = false, VALIDATE=true, VISUALIZE
 
 void help(){
 	std::cout << "Stencil ops:" << std::endl;
-	std::cout << "Stencil [all|it|rec] -i image [-r time steps]" << std::endl;
+	std::cout << "Stencil2D [all|it|rec] -i image [-t time steps]" << std::endl;
 }
 
 void parse_args(int argc, char *argv[]){
@@ -57,7 +57,7 @@ void parse_args(int argc, char *argv[]){
 			i++;
 			input_file = argv[i];
 		}
-		else if (param == "-r"){
+		else if (param == "-t"){
 
 			i++;
 			timeSteps = std::atoi(argv[i]);
@@ -72,6 +72,11 @@ void parse_args(int argc, char *argv[]){
 		}
 		else if (param == "-v"){
 			VISUALIZE = true;
+		}
+		else {
+
+			help();
+			exit(0);
 		}
 
 		i++;
@@ -104,7 +109,8 @@ int main(int argc, char *argv[]) {
 	CImg<PixelType> orgImage(input_file);
 	assert(orgImage.size ()  == (unsigned)orgImage.width() *  (unsigned)orgImage.height() && "only Grayscale allowed");
 
-	std::cout <<" execute " << input_file << " with " << timeSteps << " time steps" << std::endl;
+	std::cout <<" execute " << input_file << " with " << timeSteps << " time steps ";
+	std::cout << "(" << (sizeof(PixelType) * orgImage.size ()) << "Bytes)" << std::endl;
 
 	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
 	ImageSpace recBuffer( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, orgImage.data());
