@@ -24,10 +24,17 @@ include_directories( ${CIMG_INCLUDE_DIR} )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-add_executable(${PROJECT_NAME} ${sources} )
-add_dependencies(${PROJECT_NAME} cimg)
 
-target_link_libraries(${PROJECT_NAME} ${X11_X11_LIB})
+
+# 2d exec
+
+add_executable("Stencil2D" "src/main2D.cxx" ${sources} )
+add_dependencies("Stencil2D" cimg)
+target_link_libraries("Stencil2D" ${X11_X11_LIB})
+
+# 3d exec
+#add_executable("Stencil3D" "src/main3D.cxx" ${sources} )
+#add_dependencies("Stencil3D" cimg)
 
 
 file(GLOB_RECURSE test_sources "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cc" )
