@@ -17,7 +17,7 @@ PERF_CMD="perf stat"
 
 
 #run a dummy commnad to print stats in header line
-HEADER="Kind;algorithm;input_size;time_steps;\tnum_cores;\texec_time"
+HEADER="Kind;algorithm;input-size;time-steps;\tnum-cores;\texec-time"
 
 $PERF_CMD -x ";" ls > /dev/null 2> perf-stat
 for STAT_LINE in `cut -f 3 -d ";" perf-stat`
@@ -33,7 +33,7 @@ do
 
 	for SIZE in 10 50 100 150 200
 	do
-		for CORES in 1 2 4 8
+		for CORES in 1 2 4 8 16 32 64
 		do
 
 			for TIMESTEPS in 100
