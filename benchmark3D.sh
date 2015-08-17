@@ -1,7 +1,7 @@
 #! /bin/bash
 
 
-
+echoerr() { cat <<< "$@" 1>&2; }
 
 if [ ! -x ./Stencil3D ]
 then
@@ -31,17 +31,21 @@ echo -e $HEADER
 for REPETITIONS in `seq 1 10`
 do
 
-	for SIZE in 10 50 100 150 200
+	for SIZE in 100 150 200
 	do
 		for CORES in 1 2 4 8 16 32 64
 		do
+			CORES_TO_USE="0-$(($CORES-1))"
 
 			for TIMESTEPS in 100
 			do
+
+				SETUP="taskset -c $CORES_TO_USE $CMD -s $SIZE -t $TIMESTEPS "
+
 				export OMP_NUM_THREADS=$CORES
 
-				$CMD -s $SIZE -t $TIMESTEPS > out
-
+			## ###################### VALIDATE SETUP #######################
+				$SETUP > out
 				if ! grep -q "VALIDATION OK" out;
 				then
 					echo "validation failed at: " $TIMESTEPS
@@ -49,7 +53,10 @@ do
 					exit 1
 				fi
 
-				$PERF_CMD -x ";" $CMD -s $SIZE -t $TIMESTEPS rec > out 2> perf-stat
+			## ###################### RUN RECURSIVE #######################
+				TO_RUN="$PERF_CMD -x \";\" $SETUP rec "
+				echoerr $TO_RUN
+				$TO_RUN > out 2> perf-stat
 				TIME=`grep "ms" out | cut -f 2 -d " " | cut -f 1 -d "m"`
 				LINE=$KIND";rec;$SIZE;"$TIMESTEPS";\t"$CORES";\t"$TIME
 				for STAT_LINE in `cut -f 1 -d ";" perf-stat`
@@ -58,24 +65,31 @@ do
 				done
 				echo -e $LINE
 
-				$PERF_CMD -x ";" $CMD -s $SIZE -t $TIMESTEPS it > out 2> perf-stat
+			## ###################### RUN ITERATIVE #######################
+
+				TO_RUN="$PERF_CMD -x \";\" $SETUP it "
+				echoerr $TO_RUN
+				$TO_RUN > out 2> perf-stat
 				TIME=`grep "ms" out | cut -f 2 -d " " | cut -f 1 -d "m"`
-				LINE=$KIND";it;$SIZE;"$TIMESTEPS";\t"$CORES";\t"$TIME
+				LINE=$KIND";rec;$SIZE;"$TIMESTEPS";\t"$CORES";\t"$TIME
 				for STAT_LINE in `cut -f 1 -d ";" perf-stat`
 				do
 					 LINE=$LINE";\t"$STAT_LINE
 				done
 				echo -e $LINE
 
-				$PERF_CMD -x ";" $CMD -s $SIZE -t $TIMESTEPS inv > out 2> perf-stat
+			## ###################### RUN INVERTED #######################
+
+				TO_RUN="$PERF_CMD -x \";\" $SETUP inv "
+				echoerr $TO_RUN
+				$TO_RUN > out 2> perf-stat
 				TIME=`grep "ms" out | cut -f 2 -d " " | cut -f 1 -d "m"`
-				LINE=$KIND";inv;$SIZE;"$TIMESTEPS";\t"$CORES";\t"$TIME
+				LINE=$KIND";rec;$SIZE;"$TIMESTEPS";\t"$CORES";\t"$TIME
 				for STAT_LINE in `cut -f 1 -d ";" perf-stat`
 				do
 					 LINE=$LINE";\t"$STAT_LINE
 				done
 				echo -e $LINE
-
 
 				unset OMP_NUM_THREADS
 
