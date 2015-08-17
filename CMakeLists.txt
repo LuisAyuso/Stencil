@@ -92,18 +92,18 @@ if (CILK_FOUND)
 
 endif()
 
-# ========================== CUSTOM PARALLELISM =====================================
+# ========================== CXX_ASYNC PARALLELISM =====================================
 
 
 	# 2d exec
-	add_executable		 ("Stencil2D-custom" "src/main2D.cxx" ${sources} )
-	add_dependencies	 ("Stencil2D-custom" cimg)
-	target_link_libraries("Stencil2D-custom" ${X11_X11_LIB})
-	SET_TARGET_PROPERTIES("Stencil2D-custom" PROPERTIES COMPILE_FLAGS "-DCUSTOM")
+	add_executable		 ("Stencil2D-cxx" "src/main2D.cxx" ${sources} )
+	add_dependencies	 ("Stencil2D-cxx" cimg)
+	target_link_libraries("Stencil2D-cxx" ${X11_X11_LIB})
+	SET_TARGET_PROPERTIES("Stencil2D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
 	# 3d exec
-	add_executable		 ("Stencil3D-custom" "src/main3D.cxx" ${sources} )
-	SET_TARGET_PROPERTIES("Stencil3D-custom" PROPERTIES COMPILE_FLAGS "-DCUSTOM")
+	add_executable		 ("Stencil3D-cxx" "src/main3D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil3D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
 
 

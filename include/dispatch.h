@@ -16,13 +16,13 @@
 #endif
 
 #if defined(CILK) || defined(_OPENMP) 
-# if defined(CUSTOM)
-#	error must choose between CUSTOM, CILK or OPENMP
+# if defined(CXX_ASYNC)
+#	error must choose between CXX_ASYNC, CILK or OPENMP
 # endif
 #endif
 
 
-#if !defined(_OPENMP) && ! defined(CILK) && !defined(CUSTOM)
+#if !defined(_OPENMP) && ! defined(CILK) && !defined(CXX_ASYNC)
 # define SEQUENTIAL 1
 #endif
 
@@ -50,8 +50,8 @@
 	#define SYNC \
 		{}
 
-	#define P_FOR(it, B, E, S) \
-		for (auto it = B; it < E; it += S)
+	#define P_FOR(it, B, E, S, STMT) \
+		for (auto it = B; it < E; it += S) STMT
 
 
 #endif
@@ -77,10 +77,10 @@
 		_Pragma( STRINGIFY( omp taskwait ) )
 
 
-	#define P_FOR(it, B, E, S) \
+	#define P_FOR(it, B, E, S, STMT) \
 		_Pragma( STRINGIFY(  omp parallel )) \
 		_Pragma( STRINGIFY(  omp for )) \
-		for (auto it = B; it < E; it += S)  
+		for (auto it = B; it < E; it += S)   STMT
 
 
 #endif
@@ -100,105 +100,75 @@
 	#define SYNC \
 		cilk_sync;
 
-	#define P_FOR(it, B, E, S)\
-		cilk_for (auto it = B; it < E; it += S)  
+	#define P_FOR(it, B, E, S, STMT) \
+		cilk_for (auto it = B; it < E; it += S)  STMT
 
 #endif
 
-// ~~~~~~~~~~~~~~~~~~~~~ CUSTOM PARALLELISM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ifdef CUSTOM
+// ~~~~~~~~~~~~~~~~~~~~~ C++ ASYNC PARALLELISM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#ifdef CXX_ASYNC
 
 	#include <functional>
+	#include <future>
 	#include <thread>
 	#include <mutex>
 
-	class Thread_Pool {
+	#define THREAD_CUTOFF 2
 
-		struct Thread_queue{
-			bool go;
-			std::mutex queue_lock;
-			std::vector<std::function<void(void)>> tasks;
-		};
+	namespace {
+		static auto max_threads = std::thread::hardware_concurrency();
+		std::atomic_long current_threads (0);
 
-		static Thread_Pool instance;
-		std::vector<Thread_queue> threads;
 
-		std::mutex next_lock;
-		unsigned next;
-
-		static void run_thread (Thread_queue& queue){
-
-			do{
-			// wait for work
-			
-				auto checkQueue = [&](){ 
-					queue.queue_lock.lock();
-					auto empty = queue.tasks.empty();
-					queue.queue_lock.unlock();
-					return empty;
-				};
-				auto getTask = [&]() { 
-					auto t = queue.tasks.front();
-
-					queue.queue_lock.lock();
-					queue.tasks.erase(queue.tasks.begin());
-					queue.queue_lock.unlock();
-					return t;
-				};
-
-				while (checkQueue()){
-					const auto& task = getTask();
-					task();
-				}
-
-				// give the chance to someone else to work
-				std::this_thread::yield();
-
-			// do work
-			}while (queue.go);
-		}
-
-	public: 
-
-		Thread_Pool ()
-		:threads(std::thread::hardware_concurrency()-1), next(0)
-		{
-			for (auto& t : threads){
-				std::thread(run_thread, std::ref(t));
+		std::future<void> my_async(std::function<void(void)> f){
+			if (current_threads < max_threads * THREAD_CUTOFF) {
+				current_threads++; 
+				auto wrap = [f]() { f(); current_threads--;};
+//				std::cout << "Async call " << current_threads << std::endl;
+				return std::async(std::launch::async, wrap);
+			} 
+			else{ 
+//				std::cout << "Deferred call " << current_threads << std::endl;
+				return std::async(std::launch::deferred, f);
 			}
 		}
-
-		void add_task(const std::function<void(void)>& task){
-
-			// if more than 4 tasks queued turn sequential CUTOFF
-			if (threads[next].tasks.size() > 4){
-				task();
-				return;
+	
+		std::future<void> my_async(std::function<void(int)> f, int arg){
+			if (current_threads < max_threads * THREAD_CUTOFF) {
+				current_threads++; 
+				auto wrap = [f] (int arg) { f(arg); current_threads--;};
+//				std::cout << "Async call " << current_threads << std::endl;
+				return std::async(std::launch::async, wrap, arg);
+			} 
+			else{ 
+//				std::cout << "Deferred call " << current_threads << std::endl;
+				return std::async(std::launch::deferred, f, arg);
 			}
-			else{
-				threads[next].queue_lock.lock();
-				threads[next].tasks.push_back(task);
-				threads[next].queue_lock.unlock();
-			}
-
-			// distribute tasks round robin
-			next_lock.lock();
-			next++;
-			next_lock.unlock();
 		}
-	};
+	}
+
+	#undef THREAD_CUTOFF 
 
 
 	#define PARALLEL_CTX(STMT) \
 		STMT
-	
+
     #define SPAWN(f, ...) \
-		f(__VA_ARGS__)
+        auto wrap = [&] () { f(__VA_ARGS__); }; \
+		std::future<void> fut = my_async(wrap);
 
-	#define SYNC 
+	#define SYNC \
+		fut.wait(); \
 
-	#define P_FOR(it, B, E, S)\
-		for (auto it = B; it < E; it += S)  
+	#define P_FOR(it, B, E, S, STMT) \
+		{ \
+			std::vector<std::future<void>> promises; \
+			auto wrap = [&] (int it) { STMT; }; \
+			for (auto it = B; it < E; it += S) \
+				promises.push_back(my_async(wrap, it)); \
+			for (const auto& f : promises) f.wait(); \
+		}
+
 
 #endif
 
