@@ -12,7 +12,7 @@
 
 
 #ifndef CUT 
-#  define CUT 3
+#  define CUT 10
 #endif 
 
 

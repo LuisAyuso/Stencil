@@ -20,6 +20,15 @@
 #endif
 
 
+
+// macro tools, boilerplate
+#define STR(x) #x
+#define STRINGIFY(x) STR(x) 
+#define CONCATENATE_DETAIL(x, y) x##y
+#define CONCATENATE(x, y) CONCATENATE_DETAIL(x, y)
+#define MAKE_UNIQUE(x) CONCATENATE(x, __LINE__ )
+
+
 #ifdef SEQUENTIAL
 // ~~~~~~~~~~~~~~~~~~~~~ SEQUENTIAL ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -41,12 +50,6 @@
 
 #ifdef _OPENMP
 
-// macro tools, boilerplate
-#define STR(x) #x
-#define STRINGIFY(x) STR(x) 
-#define CONCATENATE_DETAIL(x, y) x##y
-#define CONCATENATE(x, y) CONCATENATE_DETAIL(x, y)
-#define MAKE_UNIQUE(x) CONCATENATE(x, __LINE__ )
 
 	#include <omp.h>
     
@@ -58,7 +61,7 @@
     #define SPAWN(f, ...) \
         auto MAKE_UNIQUE(wrap) = [&] () { f(__VA_ARGS__); }; \
 		_Pragma( STRINGIFY(  omp task untied )) \
-        MAKE_UNIQUE(wrap)() \
+        MAKE_UNIQUE(wrap)() 
 
 
 	#define SYNC \
@@ -81,12 +84,9 @@
 
 	#define PARALLEL_CTX 
 	
-	template<typename F, typename... ARGS>
-	inline void SPAWN (F f, ARGS& ... args){
-		// Gcc < 4.9 does not like this
-		auto wrap = [&] { f(args...); };
-		cilk_spawn wrap();
-	}
+    #define SPAWN(f, ...) \
+        auto MAKE_UNIQUE(wrap) = [&] () { f(__VA_ARGS__); }; \
+        cilk_spawn MAKE_UNIQUE(wrap)() 
 
 	#define SYNC \
 		cilk_sync;
