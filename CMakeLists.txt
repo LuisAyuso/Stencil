@@ -73,7 +73,7 @@ if (OPENMP_FOUND)
 endif()
 endif()
 
-# ========================== OPENMP =====================================
+# ========================== CILK =====================================
 
 find_package(Cilk)
 if (CILK_FOUND)
@@ -82,13 +82,30 @@ if (CILK_FOUND)
 	add_executable		 ("Stencil2D-cilk" "src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-cilk" cimg)
 	target_link_libraries("Stencil2D-cilk" ${X11_X11_LIB})
-	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK")
+	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS ${Cilk_CXX_FLAGS})
+	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
 
 	# 3d exec
 	add_executable		 ("Stencil3D-cilk" "src/main3D.cxx" ${sources} )
-	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK")
+	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES COMPILE_FLAGS ${Cilk_CXX_FLAGS})
+	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
 
 endif()
+
+# ========================== CXX_ASYNC PARALLELISM =====================================
+
+
+	# 2d exec
+	add_executable		 ("Stencil2D-cxx" "src/main2D.cxx" ${sources} )
+	add_dependencies	 ("Stencil2D-cxx" cimg)
+	target_link_libraries("Stencil2D-cxx" ${X11_X11_LIB})
+	SET_TARGET_PROPERTIES("Stencil2D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
+
+	# 3d exec
+	add_executable		 ("Stencil3D-cxx" "src/main3D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil3D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
+
+
 
 # ================================= TESTS =================================
 

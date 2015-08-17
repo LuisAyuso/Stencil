@@ -149,13 +149,13 @@ int main(int argc, char *argv[]) {
 	if (IT || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				P_FOR ( i, 0, getW(iteBuffer), 1) {
+				P_FOR ( i, 0, getW(iteBuffer), 1, {
 		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
 		 				for (unsigned k = 0; k < getD(iteBuffer); ++k){
 							kernel(iteBuffer, i, j, k, t);
 						}
 					}
-				}
+				});
 			}
 		};
 
@@ -166,13 +166,13 @@ int main(int argc, char *argv[]) {
 	if (INV || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				P_FOR ( k, 0, getD(iteBuffer), 1) {
+				P_FOR ( k, 0, getD(iteBuffer), 1, {
 					for (unsigned j = 0; j < getH(iteBuffer); ++j){
 						for (unsigned i = 0; i < getW(iteBuffer); ++i){
 							kernel(invBuffer, i, j, k, t);
 						}
 					}
-				}
+				});
 			}
 		};
 
