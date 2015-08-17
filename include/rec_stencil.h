@@ -12,7 +12,7 @@
 
 
 #ifndef CUT 
-#  define CUT 50
+#  define CUT 3
 #endif 
 
 
@@ -132,7 +132,7 @@ namespace detail {
 	inline void recursive_stencil_aux(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
-		static_assert(CUT > 3, "cut off must be greater than 3");
+		static_assert(CUT >= 3, "cut off must be greater than 3");
 
 		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
 

@@ -53,7 +53,7 @@ void parse_args(int argc, char *argv[]){
 		else if(param == "inv") {
 			INV = true;
 		}
-		if( param == "-i"){
+		else if( param == "-i"){
 			i++;
 			input_file = argv[i];
 		}
