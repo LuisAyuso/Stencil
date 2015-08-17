@@ -215,14 +215,14 @@ namespace detail {
 	template <typename DataStorage, typename Kernel>
 	void recursive_stencil(DataStorage& data, const Kernel& k, unsigned t){
 
-		PARALLEL_CTX {
+		PARALLEL_CTX ({
 
 		// notice that the original piramid has perfect vertical sides
 		auto z = data.getGlobalHyperspace();
 
 		SPAWN (( detail::recursive_stencil_aux<DataStorage, Kernel, 0>), data, k, z, 0, t);
 
-		}
+		});
 	}
 
 } // stencil namespace

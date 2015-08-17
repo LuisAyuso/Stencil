@@ -73,7 +73,7 @@ if (OPENMP_FOUND)
 endif()
 endif()
 
-# ========================== OPENMP =====================================
+# ========================== CILK =====================================
 
 find_package(Cilk)
 if (CILK_FOUND)
@@ -82,13 +82,30 @@ if (CILK_FOUND)
 	add_executable		 ("Stencil2D-cilk" "src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-cilk" cimg)
 	target_link_libraries("Stencil2D-cilk" ${X11_X11_LIB})
-	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK")
+	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS ${Cilk_CXX_FLAGS})
+	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
 
 	# 3d exec
 	add_executable		 ("Stencil3D-cilk" "src/main3D.cxx" ${sources} )
-	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK")
+	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES COMPILE_FLAGS ${Cilk_CXX_FLAGS})
+	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
 
 endif()
+
+# ========================== CUSTOM PARALLELISM =====================================
+
+
+	# 2d exec
+	add_executable		 ("Stencil2D-custom" "src/main2D.cxx" ${sources} )
+	add_dependencies	 ("Stencil2D-custom" cimg)
+	target_link_libraries("Stencil2D-custom" ${X11_X11_LIB})
+	SET_TARGET_PROPERTIES("Stencil2D-custom" PROPERTIES COMPILE_FLAGS "-DCUSTOM")
+
+	# 3d exec
+	add_executable		 ("Stencil3D-custom" "src/main3D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil3D-custom" PROPERTIES COMPILE_FLAGS "-DCUSTOM")
+
+
 
 # ================================= TESTS =================================
 
