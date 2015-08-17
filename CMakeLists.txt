@@ -22,12 +22,6 @@ if (CMAKE_COMPILER_IS_GNUCC)
     list(GET GCC_VERSION_COMPONENTS 0 GCC_MAJOR)
     list(GET GCC_VERSION_COMPONENTS 1 GCC_MINOR)
 
-
-	if (GCC_VERSION VERSION_LESS 4.9)
-		message(STATUS "gcc < 4.9: NO OMP (blame variadic arguments in lambdas)")
-		set(NO_OMP True)
-	endif()
-
 endif()
 
 

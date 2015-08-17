@@ -29,11 +29,12 @@
 #define MAKE_UNIQUE(x) CONCATENATE(x, __LINE__ )
 
 
-#ifdef SEQUENTIAL
-// ~~~~~~~~~~~~~~~~~~~~~ SEQUENTIAL ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	#define PARALLEL_CTX \
-		{}
+// ~~~~~~~~~~~~~~~~~~~~~ SEQUENTIAL ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#ifdef SEQUENTIAL
+
+	#define PARALLEL_CTX 
+		
 
     #define SPAWN(f, ...) \
         f(__VA_ARGS__)
@@ -46,8 +47,8 @@
 
 
 #endif
-// ~~~~~~~~~~~~~~~~~~~~~ OPENMP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// ~~~~~~~~~~~~~~~~~~~~~ OPENMP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef _OPENMP
 
 
@@ -77,7 +78,6 @@
 #endif
 
 // ~~~~~~~~~~~~~~~~~~~~~ CILK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 #ifdef CILK
 
 	#include <cilk/cilk.h>
@@ -93,7 +93,6 @@
 
 	#define P_FOR(it, B, E, S)\
 		cilk_for (auto it = B; it < E; it += S)  
-
 
 #endif
 
