@@ -30,7 +30,7 @@ namespace detail {
 
 			int ia = z.a(0);
 			int ib = z.b(0);
-			//int t = t0;
+
 			for (int t = t0; t < t1; ++t){
 
 				for (int i = ia; i < ib; ++i){
@@ -48,7 +48,6 @@ namespace detail {
 			int ja = z.a(1);
 			int jb = z.b(1);
 
-			//int t = t0;
 			for (int t = t0; t < t1; ++t){
 
 				for (int j = ja; j < jb; ++j){
@@ -72,7 +71,6 @@ namespace detail {
 			int ka = z.a(2);
 			int kb = z.b(2);
 
-			//int t = t0;
 			for (int t = t0; t < t1; ++t){
 
 				for (int k = ka; k < kb; ++k){
@@ -168,11 +166,10 @@ namespace detail {
 
 				//std::cout << " cut in M " << split << std::endl;
 				const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
-
 				assert(subSpaces.size() == 3);
 
-				SPAWN (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>, data, k, subSpaces[0], t0, t1);
-				SPAWN (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>, data, k, subSpaces[1], t0, t1);
+				SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[0], t0, t1);
+				SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
 				SYNC;
 				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[2], t0, t1);
 				
@@ -185,8 +182,8 @@ namespace detail {
 				assert(subSpaces.size() == 3);
 
 				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[0], t0, t1);
-				SPAWN (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>, data, k, subSpaces[1], t0, t1);
-				SPAWN (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>, data, k, subSpaces[2], t0, t1);
+				SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
+				SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[2], t0, t1);
 				SYNC;
 			}
 			// Time cut
@@ -218,13 +215,13 @@ namespace detail {
 	template <typename DataStorage, typename Kernel>
 	void recursive_stencil(DataStorage& data, const Kernel& k, unsigned t){
 
-		PARALLEL_CTX;
+		PARALLEL_CTX
 		{
 
 		// notice that the original piramid has perfect vertical sides
 		auto z = data.getGlobalHyperspace();
 
-		detail::recursive_stencil_aux<DataStorage, Kernel, 0>(data, k, z, 0, t);
+		SPAWN (( detail::recursive_stencil_aux<DataStorage, Kernel, 0>), data, k, z, 0, t);
 
 		}
 	}
