@@ -82,13 +82,13 @@ if (CILK_FOUND)
 	add_executable		 ("Stencil2D-cilk" "src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-cilk" cimg)
 	target_link_libraries("Stencil2D-cilk" ${X11_X11_LIB})
-	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS ${Cilk_CXX_FLAGS})
-	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
+	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
+	#SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
 
 	# 3d exec
 	add_executable		 ("Stencil3D-cilk" "src/main3D.cxx" ${sources} )
-	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES COMPILE_FLAGS ${Cilk_CXX_FLAGS})
-	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
+	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
+	#SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
 
 endif()
 
@@ -105,6 +105,35 @@ endif()
 	add_executable		 ("Stencil3D-cxx" "src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
+
+# ========================== INSIEME RT =====================================
+
+if(INSIEME_CODE_PATH)
+
+	message(STATUS "compile InsiemeRT version")
+
+	set(RT_HEADERS ${INSIEME_CODE_PATH}/runtime/include)
+	set(COMMON_HEADERS ${INSIEME_CODE_PATH}/common/include)
+
+	message(STATUS "INSIEME RT: ${RT_HEADERS}")
+
+	# 3d exec
+	add_executable		 ("Stencil3D-insiemert" "src/main3D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil3D-insiemert" PROPERTIES COMPILE_FLAGS "-I ${RT_HEADERS} -I ${COMMON_HEADERS} -DINSIEME_RT -DIRT_STEAL_OTHER_POP_FRONT")
+
+
+endif()
+
+
+# ========================== MPI =====================================
+
+find_package(MPI)
+if(MPI_CXX_FOUND)
+
+	# 3d exec
+	add_executable		 ("Stencil3D-mpi" "src/main3D.cxx" ${sources} )
+
+endif()
 
 
 # ================================= TESTS =================================
