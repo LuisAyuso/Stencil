@@ -105,6 +105,15 @@ endif()
 	add_executable		 ("Stencil3D-cxx" "src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
+# ========================== MPI PARALLELISM =====================================
+
+find_package(MPI)
+if(MPI_CXX_FOUND)
+
+	# 3d exec
+	add_executable		 ("Stencil3D-mpi" "src/main3D.cxx" ${sources} )
+
+endif()
 
 
 # ================================= TESTS =================================
