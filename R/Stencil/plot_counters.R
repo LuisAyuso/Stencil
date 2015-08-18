@@ -16,7 +16,14 @@ plot_measure <- function(data, measure){
 
 plot_input_size_vs_cores <- function(data, measure){
   plot <- ggplot(data)
-  plot + geom_boxplot(aes_string(x="algorithm", y=measure)) + facet_grid( input.size ~ num.cores)
+  #mean <- ddply(data,algorithm~num.cores,summarise, exec.time.mean=mean(exec.time), sd=sd(exec.time))
+  plot + geom_boxplot(aes_string(x="algorithm", y=measure, fill="algorithm")) + facet_grid( input.size ~ num.cores) # + geom_text(data = mean,  aes(label = exec.time.mean, x = algorithm, y = exec.time.mean+sd ))
+}
+
+plot_time_steps_vs_cores <- function(data, measure){
+  plot <- ggplot(data)
+  
+  plot + geom_boxplot(aes_string(x="algorithm", y=measure, fill="algorithm")) + facet_grid( time.steps ~ num.cores) 
 }
 
 
