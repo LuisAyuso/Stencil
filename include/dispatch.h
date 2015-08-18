@@ -22,7 +22,7 @@
 #endif
 
 
-#if !defined(_OPENMP) && ! defined(CILK) && !defined(CXX_ASYNC)
+#if !defined(_OPENMP) && ! defined(CILK) && !defined(CXX_ASYNC) && !defined(INSIEME_RT)
 # define SEQUENTIAL 1
 #endif
 
@@ -88,14 +88,20 @@
 // ~~~~~~~~~~~~~~~~~~~~~ CILK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef CILK
 
+#ifdef SEQUENTIAL
+# error what?
+#endif
+#ifdef _OPENMP
+# error what omp?
+#endif
+
 	#include <cilk/cilk.h>
 
 	#define PARALLEL_CTX(STMT) \
 		STMT
 	
     #define SPAWN(f, ...) \
-        auto MAKE_UNIQUE(wrap) = [&] () { f(__VA_ARGS__); }; \
-        cilk_spawn MAKE_UNIQUE(wrap)() 
+        cilk_spawn f(__VA_ARGS__) 
 
 	#define SYNC \
 		cilk_sync;
@@ -283,4 +289,43 @@
 
 
 #endif
+
+// ~~~~~~~~~~~~~~~~~~~~~ INSIEME RUNTIME ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#ifdef INSIEME_RT
+
+	#define IRT_LIBRARY_MAIN
+	#include"irt_library.hxx"
+
+//	struct RT_INIT{
+//		RT_INIT(){
+//			std::cout << "Hello RT" << std::endl;
+//			irt::init();
+//		}
+//		~RT_INIT(){
+//			std::cout << "Bye RT" << std::endl;
+//			irt::shutdown();
+//		}
+//	};
+//	// initialize insieme RT
+//	RT_INIT dummy_init;
+
+
+
+	#define PARALLEL_CTX(STMT) \
+		STMT
+	
+    #define SPAWN(f, ...) \
+        auto MAKE_UNIQUE(wrap) = [&] () { f(__VA_ARGS__); }; \
+        irt::parallel(1, MAKE_UNIQUE(wrap))
+
+	#define SYNC \
+		irt::merge_all()
+
+	#define P_FOR(it, B, E, S, STMT) \
+        auto MAKE_UNIQUE(wrap) = [&] (int it) { STMT; }; \
+		irt::pfor(B, E, S, MAKE_UNIQUE(wrap));
+
+#endif
+
 
