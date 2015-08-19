@@ -49,13 +49,13 @@ struct Voxel {
 
 };
 
-//typedef unsigned char PixelType;
-//typedef float PixelType;
-//typedef double PixelType;
-//typedef Voxel<char,3> PixelType;
+//typedef unsigned char VoxelType;
+//typedef float VoxelType;
+//typedef double VoxelType;
+//typedef Voxel<char,3> VoxelType;
+typedef Voxel<double,16> VoxelType;
+typedef BufferSet<VoxelType, 3> ImageSpace;
 
-typedef Voxel<double,16> PixelType;
-typedef BufferSet<PixelType, 3> ImageSpace;
 
  // #######################################################################################
 
@@ -121,11 +121,11 @@ int main(int argc, char *argv[]) {
 	// ~~~~~~~~~~~~~~~ Input problem parameters ~~~~~~~~~~~~~~~~~~~~~
 	parse_args(argc, argv);
 	std::cout <<" execute " << size << "^3 with " << timeSteps << " time steps ";
-	std::cout << "(" << (sizeof(PixelType) * size*size*size) << "Bytes)" << std::endl;
+	std::cout << "(" << (sizeof(VoxelType) * size*size*size) << "Bytes)" << std::endl;
 	
 	// ~~~~~~~~~~~~~~~ Load data ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
-	std::vector<PixelType> data(size*size*size);
+	std::vector<VoxelType> data(size*size*size);
 	for (auto& e : data) e = (float)rand()/RAND_MAX;
 
 	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,7 +137,6 @@ int main(int argc, char *argv[]) {
 	// ~~~~~~~~~~~~~~~~~ create kernel ~~~~~~~~~~~~~~~~~~~~~~~
 	
 	using KernelType = example_kernels::Avg_3D_k<ImageSpace>;
-	//using KernelType = example_kernels::Heat_3d_k<PixelType>;
 
 	KernelType kernel;
 

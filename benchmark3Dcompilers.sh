@@ -49,7 +49,7 @@ SIZE=100
 TIMESTEPS=150
 
 
-for REPETITIONS in `seq 1 10`
+for REPETITIONS in 1 #`seq 1 10`
 do
 
 	#for KIND in cilk omp cxx insiemert
