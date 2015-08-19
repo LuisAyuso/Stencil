@@ -13,10 +13,10 @@ namespace example_kernels{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	template< typename Elem> 
-	struct Translate_3D_k : public Kernel<BufferSet<Elem,3>, 3, Translate_3D_k<Elem>>{
+	template< typename DataStorage> 
+	struct Translate_3D_k : public Kernel<DataStorage, 3, Translate_3D_k<DataStorage>>{
 
-		void operator() (BufferSet<Elem,3>& data, unsigned i, unsigned j, unsigned k, unsigned t) const{
+		void operator() (DataStorage& data, unsigned i, unsigned j, unsigned k, unsigned t) const{
 			if (0> (int)i-1)		getElem(data, i, j, k, t+1) = 0;
 			else if (0> (int)j-1)	getElem(data, i, j, k, t+1) = 0;
 			else if (0> (int)k-1)	getElem(data, i, j, k, t+1) = 0;
@@ -30,10 +30,10 @@ namespace example_kernels{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	template< typename Elem> 
-	struct Heat_3D_k : public Kernel<BufferSet<Elem,3>, 3, Heat_3D_k<Elem>>{
+	template< typename DataStorage> 
+	struct Heat_3D_k : public Kernel<DataStorage, 3, Heat_3D_k<DataStorage>>{
 
-		void operator() (BufferSet<Elem,3>& data, int i, int j, int k, unsigned t) const{
+		void operator() (DataStorage& data, int i, int j, int k, unsigned t) const{
 
 			double fac = 2.0;
 	
@@ -60,10 +60,10 @@ namespace example_kernels{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	template< typename Elem> 
-	struct Avg_3D_k : public Kernel<BufferSet<Elem,3>, 3, Avg_3D_k<Elem>>{
+	template< typename DataStorage> 
+	struct Avg_3D_k : public Kernel<DataStorage, 3, Avg_3D_k<DataStorage>>{
 
-		void operator() (BufferSet<Elem,3>& data, int i, int j, int k, unsigned t) const{
+		void operator() (DataStorage& data, int i, int j, int k, unsigned t) const{
 
 			double fac = 2.0;
 	

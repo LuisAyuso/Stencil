@@ -52,9 +52,11 @@ TIMESTEPS=150
 for REPETITIONS in `seq 1 10`
 do
 
-	for KIND in cilk omp cxx insiemert
+	#for KIND in cilk omp cxx insiemert
+	for KIND in omp cxx insiemert
 	do
-		for CORES in 64 32 16 8 4 2 1 
+		#for CORES in 64 32 16 8 4 2 1 
+		for CORES in 8 4 2 1 
 		do
 			CORES_TO_USE="0-$(($CORES-1))"
 
@@ -67,14 +69,14 @@ do
 
 
 
-		## ###################### VALIDATE SETUP #######################
-		#	$SETUP > out
-		#	if ! grep -q "VALIDATION OK" out;
-		#	then
-		#		echo "validation failed at: " $TIMESTEPS
-		#		cat out
-		#		exit 1
-		#	fi
+	#	## ###################### VALIDATE SETUP #######################
+	#		$SETUP > out
+	#		if ! grep -q "VALIDATION OK" out;
+	#		then
+	#			echo "validation failed at: " $TIMESTEPS
+	#			cat out
+	#			exit 1
+	#		fi
 
 
 		## ###################### Run Experiments #######################

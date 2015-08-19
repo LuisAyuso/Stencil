@@ -32,16 +32,16 @@ TEST(Stencil2D, Copy){
 
 	BufferSet<Type, 2> buff1 ({10, 10}, data);
 
-	Copy_k<Type> kernel;
+	Copy_k<BufferSet<Type, 2>> kernel;
 
-	recursive_stencil<BufferSet<Type, 2>, Copy_k<Type>>( buff1, kernel, 1);
+	recursive_stencil<BufferSet<Type, 2>, Copy_k<BufferSet<Type, 2>>>( buff1, kernel, 1);
 
 	for (auto i = 0; i < 10; i ++)
 	for (auto j = 0; j < 10; j ++)
 		EXPECT_EQ( getElem(buff1, i, j, 0), getElem(buff1, i, j, 1));
 
 
-	recursive_stencil<BufferSet<Type, 2>, Copy_k<Type>>( buff1, kernel, 10);
+	recursive_stencil<BufferSet<Type, 2>, Copy_k<BufferSet<Type, 2>>>( buff1, kernel, 10);
 
 	for (auto i = 0; i < 10; i ++)
 	for (auto j = 0; j < 10; j ++)
@@ -51,10 +51,10 @@ TEST(Stencil2D, Copy){
 
 namespace {
 
-	template< typename Elem> 
-	struct Translate_k : public Kernel<BufferSet<Elem,2>, 2, Translate_k<Elem>>{
+	template< typename DataStorage> 
+	struct Translate_k : public Kernel<DataStorage, 2, Translate_k<DataStorage>>{
 
-		void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
+		void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
 			if (0> (int)i-1)		getElem(data, i, j, t+1) = 0;
 			else if (0> (int)j-1)	getElem(data, i, j, t+1) = 0;
 			else 					getElem(data, i, j, t+1) = getElem(data, i-1, j-1, t);
@@ -79,16 +79,16 @@ TEST(Stencil2D, Translate){
 	BufferSet<Type, 2> buff2 ({SIZE, SIZE}, data);
 
 
-	Translate_k<Type> kernel;
+	Translate_k<BufferSet<Type, 2>> kernel;
 
-	recursive_stencil<BufferSet<Type, 2>, Translate_k<Type>>( buff1, kernel, 1);
+	recursive_stencil<BufferSet<Type, 2>, Translate_k<BufferSet<Type, 2>>>( buff1, kernel, 1);
 
 	for (auto i = 1; i < SIZE; i ++)
 	for (auto j = 1; j < SIZE; j ++)
 		EXPECT_EQ( getElem(buff1, i-1, j-1, 0), getElem(buff1, i, j, 1));
 
 
-	recursive_stencil<BufferSet<Type, 2>, Translate_k<Type>>( buff2, kernel, 2);
+	recursive_stencil<BufferSet<Type, 2>, Translate_k<BufferSet<Type, 2>>>( buff2, kernel, 2);
 
 	for (auto i = 2; i < SIZE; i ++)
 	for (auto j = 2; j < SIZE; j ++)
@@ -111,9 +111,9 @@ TEST(Stencil2D, Blur){
 	BufferSet<Type, 2> buff2 ({SIZE, SIZE}, data);
 
 
-	Blur3_k<Type> kernel;
+	Blur3_k<BufferSet<Type, 2>> kernel;
 
-	recursive_stencil<BufferSet<Type, 2>, Blur3_k<Type>>( buff1, kernel, 1);
+	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff1, kernel, 1);
 
 
 	for (int i = 0; i < SIZE; ++i)
@@ -137,9 +137,9 @@ TEST(Stencil2D, Blur10){
 	BufferSet<Type, 2> buff2 ({SIZE, SIZE}, data);
 
 
-	Blur3_k<Type> kernel;
+	Blur3_k<BufferSet<Type, 2>> kernel;
 
-	recursive_stencil<BufferSet<Type, 2>, Blur3_k<Type>>( buff1, kernel, 10);
+	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff1, kernel, 10);
 
 
 	for (int t = 0; t < 10; ++t)
@@ -166,7 +166,7 @@ TEST(Stencil3D, Translate){
 	BufferSet<Type, 3> buff2 ({SIZE, SIZE, SIZE}, data);
 
 
-	Translate_3D_k<Type> kernel;
+	Translate_3D_k<BufferSet<Type, 3>> kernel;
 
 	recursive_stencil( buff1, kernel, 1);
 
@@ -201,7 +201,7 @@ TEST(Stencil3D, AVG_3D){
 	BufferSet<Type, 3> buff1 ({SIZE, SIZE, SIZE}, data);
 	BufferSet<Type, 3> buff2 ({SIZE, SIZE, SIZE}, data);
 
-	Avg_3D_k<Type> kernel;
+	Avg_3D_k<BufferSet<Type, 3>> kernel;
 
 	// Recursive
 	recursive_stencil( buff1, kernel, TIMESTEPS);
@@ -236,18 +236,18 @@ TEST(Stencil3D, Heat_3D){
 	BufferSet<Type, 3> recursive ({SIZE, SIZE, SIZE}, data);
 	BufferSet<Type, 3> iterative ({SIZE, SIZE, SIZE}, data);
 
-	Heat_3D_k<Type> kernel;
+	Heat_3D_k<BufferSet<Type, 3>> kernel;
 
 
 	// Recursive
 	{
-		auto t = time_call(recursive_stencil<BufferSet<Type, 3>, Heat_3D_k<Type>>, recursive, kernel, TIMESTEPS);
+		auto t = time_call(recursive_stencil<BufferSet<Type, 3>, Heat_3D_k<BufferSet<Type, 3>>>, recursive, kernel, TIMESTEPS);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
 	// iterative
 	{
-		auto it = [](BufferSet<Type, 3>& buff, const Heat_3D_k<Type>& kernel, unsigned timeSteps) {
+		auto it = [](BufferSet<Type, 3>& buff, const Heat_3D_k<BufferSet<Type, 3>>& kernel, unsigned timeSteps) {
 			for (int t = 0; t < timeSteps; ++t)
 			for (int i = 0; i < SIZE; ++i)
 			for (int j = 0; j < SIZE; ++j)
@@ -273,10 +273,10 @@ TEST(Stencil3D, Heat_3D){
 
 namespace {
 
-	template< typename Elem> 
-	struct Avg_4D_k : public Kernel<BufferSet<Elem,4>, 4, Avg_4D_k<Elem>>{
+	template< typename DataStorage> 
+	struct Avg_4D_k : public Kernel<DataStorage, 4, Avg_4D_k<DataStorage>>{
 
-		void operator() (BufferSet<Elem,4>& data, int i, int j, int k, int w, unsigned t) const{
+		void operator() (DataStorage& data, int i, int j, int k, int w, unsigned t) const{
 
 			double fac = 2.0;
 	
@@ -314,17 +314,17 @@ TEST(Stencil4D, AVG_4D){
 	BufferSet<Type, 4> recursive ({SIZE, SIZE, SIZE, SIZE}, data);
 	BufferSet<Type, 4> iterative ({SIZE, SIZE, SIZE, SIZE}, data);
 
-	Avg_4D_k<Type> kernel;
+	Avg_4D_k<BufferSet<Type, 4>> kernel;
 
 	// Recursive
 	{
-		auto t = time_call(recursive_stencil<BufferSet<Type, 4>, Avg_4D_k<Type>>, recursive, kernel, TIMESTEPS);
+		auto t = time_call(recursive_stencil<BufferSet<Type, 4>, Avg_4D_k<BufferSet<Type, 4>>>, recursive, kernel, TIMESTEPS);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
 	// iterative
 	{
-		auto it = [](BufferSet<Type, 4>& buff, const Avg_4D_k<Type>& kernel, unsigned timeSteps) {
+		auto it = [](BufferSet<Type, 4>& buff, const Avg_4D_k<BufferSet<Type, 4>>& kernel, unsigned timeSteps) {
 			for (int t = 0; t < timeSteps; ++t)
 			for (int i = 0; i < SIZE; ++i)
 			for (int j = 0; j < SIZE; ++j)

@@ -24,13 +24,22 @@
 
 #if !defined(_OPENMP) && ! defined(CILK) && !defined(CXX_ASYNC) && !defined(INSIEME_RT)
 # define SEQUENTIAL 1
+#else
+
+// ~~~~~~~~~~~~~~~~~~~~~~~ SHARED TO ALL PARALLEL VERSIONS ~~~~~~~~~~~~~~~~~
+
+	#include <thread>
+	#include <atomic>
+
+	#define THREAD_CUTOFF 2
+
+	static auto max_threads = std::thread::hardware_concurrency() * THREAD_CUTOFF;
+	std::atomic_long current_threads (0);
+
 #endif
 
 
-
 // macro tools, boilerplate
-#define STR(x) #x
-#define STRINGIFY(x) STR(x) 
 #define CONCATENATE_DETAIL(x, y) x##y
 #define CONCATENATE(x, y) CONCATENATE_DETAIL(x, y)
 #define MAKE_UNIQUE(x) CONCATENATE(x, __LINE__ )
@@ -62,24 +71,23 @@
 	#include <omp.h>
     
 	#define PARALLEL_CTX(STMT) \
-		_Pragma( STRINGIFY(  omp parallel )) \
-		_Pragma( STRINGIFY(  omp single  )) \
+		_Pragma( "omp parallel" ) \
+		_Pragma( "omp single"  ) \
 		STMT;
 	
-
     #define SPAWN(f, ...) \
-        auto MAKE_UNIQUE(wrap) = [&] () { f(__VA_ARGS__); }; \
-		_Pragma( STRINGIFY(  omp task untied )) \
-        MAKE_UNIQUE(wrap)() 
-
+        auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--; }; \
+		if(current_threads  < max_threads) {\
+			_Pragma( "omp task untied") \
+			MAKE_UNIQUE(wrap)(); } \
+		else f(__VA_ARGS__);
 
 	#define SYNC \
-		_Pragma( STRINGIFY( omp taskwait ) )
-
+		_Pragma( "omp taskwait ")
 
 	#define P_FOR(it, B, E, S, STMT) \
-		_Pragma( STRINGIFY(  omp parallel )) \
-		_Pragma( STRINGIFY(  omp for )) \
+		_Pragma( " omp parallel ") \
+		_Pragma( "  omp for ") \
 		for (auto it = B; it < E; it += S)   STMT
 
 
@@ -97,11 +105,14 @@
 
 	#include <cilk/cilk.h>
 
+
 	#define PARALLEL_CTX(STMT) \
 		STMT
 	
     #define SPAWN(f, ...) \
-        cilk_spawn f(__VA_ARGS__) 
+        auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--; }; \
+		if(current_threads < max_threads) cilk_spawn MAKE_UNIQUE(wrap)(); \
+		else f(__VA_ARGS__);
 
 	#define SYNC \
 		cilk_sync;
@@ -119,11 +130,8 @@
 	#include <thread>
 	#include <mutex>
 
-	#define THREAD_CUTOFF 2
 
 	namespace {
-		static auto max_threads = std::thread::hardware_concurrency();
-		std::atomic_long current_threads (0);
 
 
 		class Thread_Pool{
@@ -237,7 +245,7 @@
 
 
 		std::future<void> my_async(std::function<void(void)> f){
-			if (current_threads < max_threads * THREAD_CUTOFF) {
+			if (current_threads < max_threads) {
 				current_threads++; 
 				auto wrap = [f]() { f(); current_threads--;};
 //				std::cout << "Async call " << current_threads << std::endl;
@@ -251,7 +259,7 @@
 		}
 	
 		std::future<void> my_async(std::function<void(int)> f, int arg){
-			if (current_threads < max_threads * THREAD_CUTOFF) {
+			if (current_threads < max_threads) {
 				current_threads++; 
 				auto wrap = [=] () { f(arg); current_threads--;};
 //				std::cout << "Async call " << current_threads << std::endl;
@@ -264,8 +272,6 @@
 			}
 		}
 	}
-
-	#undef THREAD_CUTOFF 
 
 
 	#define PARALLEL_CTX(STMT) \
@@ -316,8 +322,9 @@
 		STMT
 	
     #define SPAWN(f, ...) \
-        auto MAKE_UNIQUE(wrap) = [&] () { f(__VA_ARGS__); }; \
-        irt::parallel(1, MAKE_UNIQUE(wrap))
+        auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--;}; \
+		if(current_threads < max_threads) irt::parallel(1, MAKE_UNIQUE(wrap)); \
+        else f(__VA_ARGS__);
 
 	#define SYNC \
 		irt::merge_all()

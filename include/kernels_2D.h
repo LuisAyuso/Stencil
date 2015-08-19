@@ -12,10 +12,10 @@ namespace stencil{
 namespace example_kernels{
 
 
-		template< typename Elem> 
-		struct Copy_k : public Kernel<BufferSet<Elem,2>, 2, Copy_k<Elem>>{
+		template< typename DataStorage> 
+		struct Copy_k : public Kernel<DataStorage, 2, Copy_k<DataStorage>>{
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
+			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
 
 				auto pix = getElem(data, i, j, 0);
 				getElem(data, i, j, 1) = pix;
@@ -28,10 +28,10 @@ namespace example_kernels{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		template< typename Elem> 
-		struct Life_k : public Kernel<BufferSet<Elem,2>, 2, Life_k<Elem>>{
+		template< typename DataStorage> 
+		struct Life_k : public Kernel<DataStorage, 2, Life_k<DataStorage>>{
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
+			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				unsigned sum = 0;
@@ -60,14 +60,14 @@ namespace example_kernels{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		template< typename Elem> 
-		struct Color_k : public Kernel<BufferSet<Elem,2>, 2, Color_k<Elem>>{
+		template< typename DataStorage> 
+		struct Color_k : public Kernel<DataStorage, 2, Color_k<DataStorage>>{
 
-			Elem maxValue;
+			typename DataStorage::ElementType maxValue;
 
-			Color_k ( Elem maxValue) : maxValue(maxValue) {}
+			Color_k ( typename DataStorage::ElementType maxValue) : maxValue(maxValue) {}
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
+			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
 				getElem(data, i, j, t+1) = t%maxValue;
 			}
 
@@ -78,12 +78,12 @@ namespace example_kernels{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		template< typename Elem> 
-		struct Blur3_k : public Kernel<BufferSet<Elem,2>, 2, Blur3_k<Elem>>{
+		template< typename DataStorage> 
+		struct Blur3_k : public Kernel<DataStorage, 2, Blur3_k<DataStorage>>{
 
 			static const float Kcoeff[3][3];
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
+			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
@@ -107,17 +107,17 @@ namespace example_kernels{
 			}
 		};
 
-		template< typename Elem> 
-		const float Blur3_k<Elem>::Kcoeff[3][3] = {{0.01, 0.08, 0.01}, {0.08, 0.64, 0.08}, {0.01, 0.08, 0.01}};
+		template< typename DataStorage> 
+		const float Blur3_k<DataStorage>::Kcoeff[3][3] = {{0.01, 0.08, 0.01}, {0.08, 0.64, 0.08}, {0.01, 0.08, 0.01}};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		template< typename Elem> 
-		struct Blur5_k : public Kernel<BufferSet<Elem,2>, 2, Blur5_k<Elem>>{
+		template< typename DataStorage> 
+		struct Blur5_k : public Kernel<DataStorage, 2, Blur5_k<DataStorage>>{
 
 			static const float Kcoeff[5][5];
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
+			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
@@ -141,8 +141,8 @@ namespace example_kernels{
 			}
 		};
 
-		template< typename Elem> 
-		const float Blur5_k<Elem>::Kcoeff[5][5] =
+		template< typename DataStorage> 
+		const float Blur5_k<DataStorage>::Kcoeff[5][5] =
 									{{0.01, 0.02, 0.04, 0.02, 0.01},
 									 {0.02, 0.04, 0.08, 0.04, 0.02},
 									 {0.04, 0.08, 0.16, 0.08, 0.04},
@@ -158,8 +158,8 @@ namespace example_kernels{
 		 * a generic  gaussian blur kernel:
 		 * http://stackoverflow.com/questions/8204645/implementing-gaussian-blur-how-to-calculate-convolution-matrix-kernel
 		 */
-		template< typename Elem, unsigned Size> 
-		struct BlurN_k : public Kernel<BufferSet<Elem,2>, 2, BlurN_k<Elem, Size>>{
+		template< typename DataStorage, unsigned Size> 
+		struct BlurN_k : public Kernel<DataStorage, 2, BlurN_k<DataStorage, Size>>{
 
 			const unsigned slope;
 
@@ -201,7 +201,7 @@ namespace example_kernels{
 
 			}
 
-			void operator() (BufferSet<Elem,2>& data, unsigned i, unsigned j, unsigned t) const{
+			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
