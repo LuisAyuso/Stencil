@@ -83,12 +83,16 @@ if (CILK_FOUND)
 	add_dependencies	 ("Stencil2D-cilk" cimg)
 	target_link_libraries("Stencil2D-cilk" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
-	#SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
+	if (Cilk_LINK_LIBRARIES)
+		SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
+	endif()
 
 	# 3d exec
 	add_executable		 ("Stencil3D-cilk" "src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
-	#SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
+	if (Cilk_LINK_LIBRARIES)
+		SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
+	endif()
 
 endif()
 
