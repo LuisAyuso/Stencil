@@ -15,7 +15,7 @@ then
 	exit -1
 fi
 
-echo "algorithm;time-steps;time;cache-misses;L1-dcache-load-misses;L1-dcache-store-misses"
+echo "kind;algorithm;time-steps;time;cache-misses;L1-dcache-load-misses;L1-dcache-store-misses"
 
 for REPETITIONS in `seq 1 10`
 do
@@ -35,7 +35,7 @@ do
 		L1_LOAD_MISES=`grep "L1-dcache-load-misses" perf | cut -f 1 -d ";"`
 		L1_STORE_MISSES=`grep "L1-dcache-store-misses" perf | cut -f 1 -d ";"`
 		TIME=`grep "ms" out | cut -f 2 -d " " | cut -f 1 -d "m"`
-		LINE="rec;"$TIMESTEPS";"$TIME";"$CACHE_MISES";"$L1_LOAD_MISES";"$L1_STORE_MISSES
+		LINE="seq;rec;"$TIMESTEPS";"$TIME";"$CACHE_MISES";"$L1_LOAD_MISES";"$L1_STORE_MISSES
 		echo $LINE
 
 		perf stat -e cache-misses,L1-dcache-load-misses,L1-dcache-store-misses -x ";" taskset 0x4 ./Stencil -i $1 -t $TIMESTEPS it > out 2> perf
@@ -43,7 +43,7 @@ do
 		L1_LOAD_MISES=`grep "L1-dcache-load-misses" perf | cut -f 1 -d ";"`
 		L1_STORE_MISSES=`grep "L1-dcache-store-misses" perf | cut -f 1 -d ";"`
 		TIME=`grep "ms" out | cut -f 2 -d " " | cut -f 1 -d "m"`
-		LINE="it;"$TIMESTEPS";"$TIME";"$CACHE_MISES";"$L1_LOAD_MISES";"$L1_STORE_MISSES
+		LINE="seq;it;"$TIMESTEPS";"$TIME";"$CACHE_MISES";"$L1_LOAD_MISES";"$L1_STORE_MISSES
 		echo $LINE
 
 		perf stat -e cache-misses,L1-dcache-load-misses,L1-dcache-store-misses -x ";" taskset 0x4 ./Stencil -i $1 -t $TIMESTEPS inv > out 2> perf
@@ -51,7 +51,7 @@ do
 		L1_LOAD_MISES=`grep "L1-dcache-load-misses" perf | cut -f 1 -d ";"`
 		L1_STORE_MISSES=`grep "L1-dcache-store-misses" perf | cut -f 1 -d ";"`
 		TIME=`grep "ms" out | cut -f 2 -d " " | cut -f 1 -d "m"`
-		LINE="inv;"$TIMESTEPS";"$TIME";"$CACHE_MISES";"$L1_LOAD_MISES";"$L1_STORE_MISSES
+		LINE="seq;inv;"$TIMESTEPS";"$TIME";"$CACHE_MISES";"$L1_LOAD_MISES";"$L1_STORE_MISSES
 		echo $LINE
 
 	done

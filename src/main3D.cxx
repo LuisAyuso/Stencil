@@ -53,6 +53,7 @@ struct Voxel {
 //typedef float PixelType;
 //typedef double PixelType;
 //typedef Voxel<char,3> PixelType;
+
 typedef Voxel<double,16> PixelType;
 typedef BufferSet<PixelType, 3> ImageSpace;
 
@@ -135,7 +136,7 @@ int main(int argc, char *argv[]) {
 
 	// ~~~~~~~~~~~~~~~~~ create kernel ~~~~~~~~~~~~~~~~~~~~~~~
 	
-	using KernelType = example_kernels::Avg_3D_k<PixelType>;
+	using KernelType = example_kernels::Avg_3D_k<ImageSpace>;
 	//using KernelType = example_kernels::Heat_3d_k<PixelType>;
 
 	KernelType kernel;
@@ -149,13 +150,13 @@ int main(int argc, char *argv[]) {
 	if (IT || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				P_FOR ( i, 0, getW(iteBuffer), 1) {
+				P_FOR ( i, 0, getW(iteBuffer), 1, {
 		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
 		 				for (unsigned k = 0; k < getD(iteBuffer); ++k){
 							kernel(iteBuffer, i, j, k, t);
 						}
 					}
-				}
+				});
 			}
 		};
 
@@ -166,13 +167,13 @@ int main(int argc, char *argv[]) {
 	if (INV || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				P_FOR ( k, 0, getD(iteBuffer), 1) {
+				P_FOR ( k, 0, getD(iteBuffer), 1, {
 					for (unsigned j = 0; j < getH(iteBuffer); ++j){
 						for (unsigned i = 0; i < getW(iteBuffer); ++i){
 							kernel(invBuffer, i, j, k, t);
 						}
 					}
-				}
+				});
 			}
 		};
 
@@ -187,9 +188,9 @@ int main(int argc, char *argv[]) {
 		else std::cout << "VALIDATION OK" << std::endl;
 	}
 
-	//std::cout << recBuffer << std::endl;
-	//std::cout << invBuffer << std::endl;
-	//std::cout << iteBuffer << std::endl;
+//	std::cout << recBuffer << std::endl;
+//	std::cout << invBuffer << std::endl;
+//	std::cout << iteBuffer << std::endl;
 
 	return 0;
 }

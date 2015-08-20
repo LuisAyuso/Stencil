@@ -53,7 +53,7 @@ void parse_args(int argc, char *argv[]){
 		else if(param == "inv") {
 			INV = true;
 		}
-		if( param == "-i"){
+		else if( param == "-i"){
 			i++;
 			input_file = argv[i];
 		}
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 	//using KernelType = example_kernels::Blur3_k<PixelType>;
 	//using KernelType = example_kernels::Blur5_k<PixelType>;
 	//using KernelType = example_kernels::BlurN_k<PixelType, 7>;
-	using KernelType = example_kernels::BlurN_k<PixelType, 9>;
+	using KernelType = example_kernels::BlurN_k<ImageSpace, 9>;
 
 	KernelType kernel;
 
@@ -142,11 +142,11 @@ int main(int argc, char *argv[]) {
 	if (IT || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				P_FOR ( i, 0, getW(iteBuffer), 1) {
+				P_FOR ( i, 0, getW(iteBuffer), 1, {
 		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
 						kernel(iteBuffer, i, j, t);
 					}
-				}
+				});
 			}
 		};
 
@@ -157,11 +157,11 @@ int main(int argc, char *argv[]) {
 	if (INV || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				P_FOR ( j, 0, getH(iteBuffer), 1) {
+				P_FOR ( j, 0, getH(iteBuffer), 1 , {
 					for (unsigned i = 0; i < getW(iteBuffer); ++i){
 						kernel(invBuffer, i, j, t);
 					}
-				}
+				});
 			}
 		};
 
