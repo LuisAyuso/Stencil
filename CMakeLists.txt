@@ -4,7 +4,6 @@ cmake_minimum_required(VERSION 2.8)
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include (cimg)
-include (gtest)
 include (FindX11)
 
 # -------------------------------------------------------------------
@@ -13,25 +12,6 @@ if(APPLE)
     include_directories(AFTER "/opt/X11/include")
     set(NO_TEST True)
 endif()
-
-
-if (CMAKE_COMPILER_IS_GNUCC)
-    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-                    OUTPUT_VARIABLE GCC_VERSION)
-    string(REGEX MATCHALL "[0-9]+" GCC_VERSION_COMPONENTS ${GCC_VERSION})
-    list(GET GCC_VERSION_COMPONENTS 0 GCC_MAJOR)
-    list(GET GCC_VERSION_COMPONENTS 1 GCC_MINOR)
-
-
-	if (GCC_VERSION VERSION_LESS 4.9)
-		message(STATUS "gcc < 4.9: NO OMP (blame variadic arguments in lambdas)")
-		set(NO_OMP True)
-	endif()
-
-endif()
-
-
-
 
 # -------------------------------------------------------------------
 
@@ -99,7 +79,9 @@ endif()
 # ================================= TESTS =================================
 
 if (NOT NO_TEST)
+	message(STATUS " ~~~~~~~~~~~~Compile tests ~~~~~~~~~~~~~")
 
+    include (gtest)
     file(GLOB_RECURSE test_sources "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cc" )
 
     foreach( test_source ${test_sources} )
