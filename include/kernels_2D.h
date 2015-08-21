@@ -21,8 +21,8 @@ namespace example_kernels{
 				getElem(data, i, j, 1) = pix;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension) const{
-				return {0,0};
+			inline std::pair<int,int> getSlope(unsigned dimension) const{
+				return {1,-1};
 			}
 		};
 
@@ -53,7 +53,7 @@ namespace example_kernels{
 				}
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension) const{
+			inline std::pair<int,int> getSlope(unsigned dimension) const{
 				return {1,-1};
 			}
 		};
@@ -71,7 +71,7 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = t%maxValue;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension) const{
+			inline std::pair<int,int> getSlope(unsigned dimension) const{
 				return {1,-1};
 			}
 		};
@@ -102,7 +102,7 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension) const{
+			inline std::pair<int,int> getSlope(unsigned dimension) const{
 				return {1,-1};
 			}
 		};
@@ -136,7 +136,7 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension) const{
+			inline std::pair<int,int> getSlope(unsigned dimension) const{
 				return {2,-2};
 			}
 		};
@@ -235,7 +235,7 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			std::pair<int,int> getSlope(unsigned dimension) const{
+			inline std::pair<int,int> getSlope(unsigned dimension) const{
 				return {slope,-slope};
 			}
 		};

@@ -16,7 +16,6 @@
 #endif 
 
 
-
 namespace stencil{
 
 
@@ -140,7 +139,7 @@ namespace detail {
 
 		// BASE CASE
 		if (deltaT <= CUT){
-
+	
 			base_case <DataStorage, Kernel>  (data, k, z, t0, t1);
 		}
 		

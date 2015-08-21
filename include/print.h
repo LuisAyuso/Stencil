@@ -77,6 +77,34 @@ namespace utils{
 		return PrintWrapper<T>(element);
 	}
 
+
+
+	std::string getSizeHuman(size_t n){
+	
+		auto toString =[](size_t size, const std::string& suffix){
+			std::string tmp;
+			tmp.append(std::to_string(size));
+			tmp.append(suffix);
+			return tmp;
+		};
+
+		auto KB = 1024;
+		auto MB = 1024*1024;
+		auto GB = 1024*1024*1024;
+
+		if (n > GB){
+			return toString(n/GB, "GB");
+		}
+		else if (n > MB){
+			return toString(n/MB, "MB");
+		}
+		else if (n > KB){
+			return toString(n/KB, "KB");
+		}
+		return toString(n, "Bytes");
+	
+	}
+
 } // end of namespace utils
 
 namespace std {
