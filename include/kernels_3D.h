@@ -23,7 +23,7 @@ namespace example_kernels{
 			else 					getElem(data, i, j, k, t+1) = getElem(data, i-1, j-1, k-1, t);
 		}
 
-		std::pair<int,int> getSlope(unsigned dimension) const{
+		inline std::pair<int,int> getSlope(unsigned dimension) const{
 			return {1,-1};
 		}
 	};
@@ -53,7 +53,7 @@ namespace example_kernels{
 		//	std::cout << getElem(data, i, j, k, t+1)  << ":" << getElem(data, i, j, k, t) <<  "@ (" << i << "," << j << "," << k << ")" << std::endl;
 		}
 
-		std::pair<int,int> getSlope(unsigned dimension) const{
+		inline std::pair<int,int> getSlope(unsigned dimension) const{
 			return {1,-1};
 		}
 	};
@@ -88,7 +88,7 @@ namespace example_kernels{
 		//	std::cout << getElem(data, i, j, k, t+1)  << ":" << getElem(data, i, j, k, t) <<  "@ (" << i << "," << j << "," << k << ")" << std::endl;
 		}
 
-		std::pair<int,int> getSlope(unsigned dimension) const{
+		inline std::pair<int,int> getSlope(unsigned dimension) const{
 			return {1,-1};
 		}
 	};
