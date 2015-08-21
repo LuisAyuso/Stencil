@@ -7,7 +7,7 @@
 #include "kernel.h"
 #include "kernels_3D.h"
 #include "bufferSet.h"
-#include "rec_stencil.h"
+#include "rec_stencil_inverted_dims.h"
 
 #include "timer.h" 
 

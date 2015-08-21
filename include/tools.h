@@ -19,6 +19,7 @@ namespace {
 		const static bool value = (N>=M);
 	};
 
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ Comparison tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	template <typename T>
