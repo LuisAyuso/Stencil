@@ -43,6 +43,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 # ========================== SEQUENTIAL =====================================
 
+# 1d exec
+add_executable("Stencil1D" "code/src/main1D.cxx" ${sources} )
+add_dependencies("Stencil1D" cimg)
+target_link_libraries("Stencil1D" ${X11_X11_LIB})
+
 # 2d exec
 add_executable("Stencil2D" "code/src/main2D.cxx" ${sources} )
 add_dependencies("Stencil2D" cimg)
@@ -57,6 +62,11 @@ add_executable("Stencil3D" "code/src/main3D.cxx" ${sources} )
 if (NOT NO_OMP)
 find_package(OpenMP)
 if (OPENMP_FOUND)
+
+	# 1d exec 
+	add_executable	     ("Stencil1D-omp" "code/src/main1D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil1D-omp" PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS})
+	SET_TARGET_PROPERTIES("Stencil1D-omp" PROPERTIES LINK_FLAGS ${OpenMP_CXX_FLAGS})
 
 	# 2d exec
 	add_executable	     ("Stencil2D-omp" "code/src/main2D.cxx" ${sources} )
@@ -78,6 +88,13 @@ endif()
 find_package(Cilk)
 if (CILK_FOUND)
 
+	# 1d exec
+	add_executable		 ("Stencil1D-cilk" "code/src/main1D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil1D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
+	if (Cilk_LINK_LIBRARIES)
+		SET_TARGET_PROPERTIES("Stencil1D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
+	endif()
+
 	# 2d exec
 	add_executable		 ("Stencil2D-cilk" "code/src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-cilk" cimg)
@@ -98,6 +115,9 @@ endif()
 
 # ========================== CXX_ASYNC PARALLELISM =====================================
 
+	# 1d exec
+	add_executable		 ("Stencil1D-cxx" "code/src/main1D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil1D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
 	# 2d exec
 	add_executable		 ("Stencil2D-cxx" "code/src/main2D.cxx" ${sources} )
@@ -120,6 +140,10 @@ if(INSIEME_CODE_PATH)
 	set(COMMON_HEADERS ${INSIEME_CODE_PATH}/common/include)
 
 	message(STATUS "INSIEME RT: ${RT_HEADERS}")
+
+	# 1d exec
+	add_executable		 ("Stencil1D-insiemert" "code/src/main1D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil1D-insiemert" PROPERTIES COMPILE_FLAGS "-I ${RT_HEADERS} -I ${COMMON_HEADERS} -DINSIEME_RT -DIRT_STEAL_OTHER_POP_FRONT")
 
 	# 3d exec
 	add_executable		 ("Stencil3D-insiemert" "code/src/main3D.cxx" ${sources} )

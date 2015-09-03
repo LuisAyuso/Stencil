@@ -9,6 +9,7 @@
 #include "kernels_2D.h"
 #include "bufferSet.h"
 #include "rec_stencil.h"
+//#include "rec_stencil_multiple_splits.h"
 
 #include "timer.h" 
 

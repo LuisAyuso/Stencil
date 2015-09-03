@@ -5,7 +5,7 @@
 
 #include "hyperspace.h"
 #include "kernel.h"
-#include "kernels_3D.h"
+#include "kernels_1D.h"
 #include "bufferSet.h"
 #include "rec_stencil_inverted_dims.h"
 //#include "rec_stencil_multiple_splits.h"
@@ -16,46 +16,10 @@ using namespace stencil;
 
 // #######################################################################################
 
-template <typename Elem, unsigned Size>
-struct Voxel {
 
-    Elem elems [Size];
+typedef double ElemType;
 
-    Voxel& operator= (float v){
-        for (int i = 0; i < Size; i++)
-            elems[i] = (Elem)v;
-        return *this;
-    }
-    Voxel operator+ (const Voxel& o) const{
-        Voxel<Elem, Size> res;
-        for (int i = 0; i < Size; i++)
-            res.elems[i] = elems[i] + o.elems[i];
-        return res;
-    }
-    Voxel operator/ (double d) const{
-        Voxel<Elem, Size> res;
-        for (int i = 0; i < Size; i++)
-            res.elems[i] = elems[i] / d;
-        return res;
-    }
-    
-    bool operator ==  (const Voxel& o) const{
-        for (int i = 0; i < Size; i++)
-            if( elems[i] != o.elems[i]) return false;
-        return true;
-    }
-    bool operator !=  (const Voxel& o) const{
-        return !(*this == o);
-    }
-
-};
-
-//typedef unsigned char VoxelType;
-//typedef float VoxelType;
-typedef double VoxelType;
-//typedef Voxel<char,3> VoxelType;
-//typedef Voxel<double,16> VoxelType;
-typedef BufferSet<VoxelType, 3> ImageSpace;
+typedef BufferSet<ElemType, 1> ImageSpace;
 
 
  // #######################################################################################
@@ -121,25 +85,25 @@ int main(int argc, char *argv[]) {
 
 	// ~~~~~~~~~~~~~~~ Input problem parameters ~~~~~~~~~~~~~~~~~~~~~
 	parse_args(argc, argv);
-	std::cout <<" execute " << size << "^3 with " << timeSteps << " time steps ";
-	std::cout << "(" << utils::getSizeHuman(sizeof(VoxelType) * size*size*size) << ")" << std::endl;
+	std::cout <<" execute " << size << " with " << timeSteps << " time steps ";
+	std::cout << "(" << utils::getSizeHuman(sizeof(ElemType) * size) << ")" << std::endl;
 	
 	// ~~~~~~~~~~~~~~~ Load data ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
-	std::vector<VoxelType> data(size*size*size);
+	std::vector<ElemType> data(size);
 	for (auto& e : data) e = (float)rand()/RAND_MAX;
 
 	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	ImageSpace recBuffer( {size, size, size}, data);
-	ImageSpace iteBuffer( {size, size, size}, data);
-	ImageSpace invBuffer( {size, size, size}, data);
+	ImageSpace recBuffer( {size}, data);
+	ImageSpace iteBuffer( {size}, data);
+	ImageSpace invBuffer( {size}, data);
 
 	std::cout << " ~~~~~~~~~~~~~ GO ~~~~~~~~~~~~~~~~~~~" <<std::endl;
 
 	// ~~~~~~~~~~~~~~~~~ create kernel ~~~~~~~~~~~~~~~~~~~~~~~
 	
-	using KernelType = example_kernels::Avg_3D_k<ImageSpace>;
+	using KernelType = example_kernels::Avg_1D_k<ImageSpace>;
 
 	KernelType kernel;
 
@@ -169,12 +133,8 @@ int main(int argc, char *argv[]) {
 	if (INV || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
-				P_FOR ( k, 0, getD(iteBuffer), 1, {
-					for (unsigned j = 0; j < getH(iteBuffer); ++j){
-						for (unsigned i = 0; i < getW(iteBuffer); ++i){
-							kernel(invBuffer, i, j, k, t);
-						}
-					}
+				P_FOR ( i, 0, getW(iteBuffer), 1, {
+					kernel(invBuffer, i, t);
 				});
 			}
 		};

@@ -176,9 +176,9 @@ namespace detail {
 				const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
 				assert(subSpaces.size() == 3);
 
-				SPAWN ( (Recursion_Unwrapper<Count+1>::template recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[0], t0, t1);
+				SPAWN ( left, (Recursion_Unwrapper<Count+1>::template recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[0], t0, t1);
 				Recursion_Unwrapper<Count+1>::template recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>( data, k, subSpaces[1], t0, t1);
-				SYNC;
+				SYNC(left);
 
 				Recursion_Unwrapper<Count+1>::template recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[2], t0, t1);
 				
@@ -192,9 +192,9 @@ namespace detail {
 
 				Recursion_Unwrapper<Count+1>::template recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[0], t0, t1);
 
-				SPAWN ( (Recursion_Unwrapper<Count+1>::template recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
+				SPAWN ( left, (Recursion_Unwrapper<Count+1>::template recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
 				Recursion_Unwrapper<Count+1>::template recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>( data, k, subSpaces[2], t0, t1);
-				SYNC;
+				SYNC(left);
 			}
 			// Time cut
 			else { // if (deltaT > 1 && deltaX > 0  && deltaY > 0){
