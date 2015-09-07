@@ -8,6 +8,7 @@
 #include "kernels_3D.h"
 #include "bufferSet.h"
 #include "rec_stencil_inverted_dims.h"
+//#include "rec_stencil_multiple_splits.h"
 
 #include "timer.h" 
 

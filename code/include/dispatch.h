@@ -53,15 +53,18 @@
 		STMT
 		
 
-    #define SPAWN(f, ...) \
-        f(__VA_ARGS__)
+    #define SPAWN(taskName, f, ...) \
+        f(__VA_ARGS__);  \
+		int taskName;
 
-	#define SYNC \
+	#define SYNC(...) \
 		{}
 
 	#define P_FOR(it, B, E, S, STMT) \
 		for (auto it = B; it < E; it += S) STMT
 
+	// dummy promise for future values
+	typedef int PROMISE;
 
 #endif
 
@@ -75,14 +78,15 @@
 		_Pragma( "omp single"  ) \
 		STMT;
 	
-    #define SPAWN(f, ...) \
+    #define SPAWN(taskName, f, ...) \
         auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--; }; \
 		if(current_threads  < max_threads) {\
 			_Pragma( "omp task untied") \
 			MAKE_UNIQUE(wrap)(); } \
-		else f(__VA_ARGS__);
+		else f(__VA_ARGS__); \
+		int taskName;
 
-	#define SYNC \
+	#define SYNC(...) \
 		_Pragma( "omp taskwait ")
 
 	#define P_FOR(it, B, E, S, STMT) \
@@ -90,6 +94,8 @@
 		_Pragma( "  omp for ") \
 		for (auto it = B; it < E; it += S)   STMT
 
+	// dummy promise for future values, sync is done based on threadgroup
+	typedef int PROMISE;
 
 #endif
 
@@ -109,16 +115,20 @@
 	#define PARALLEL_CTX(STMT) \
 		STMT
 	
-    #define SPAWN(f, ...) \
+    #define SPAWN(taskName, f, ...) \
         auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--; }; \
 		if(current_threads < max_threads) cilk_spawn MAKE_UNIQUE(wrap)(); \
-		else f(__VA_ARGS__);
+		else f(__VA_ARGS__); \
+		int taskName;
 
-	#define SYNC \
+	#define SYNC(...) \
 		cilk_sync;
 
 	#define P_FOR(it, B, E, S, STMT) \
 		cilk_for (auto it = B; it < E; it += S)  STMT
+
+	// dummy promise for future values, sync is done based on threadgroup
+	typedef int PROMISE;
 
 #endif
 
@@ -277,12 +287,40 @@
 	#define PARALLEL_CTX(STMT) \
 		STMT
 
-    #define SPAWN(f, ...) \
+    #define SPAWN(taskName, f, ...) \
         auto wrap = [&] () { f(__VA_ARGS__); }; \
-		std::future<void> fut = my_async(wrap);
+		std::future<void> taskName = my_async(wrap);
 
-	#define SYNC \
-		fut.wait(); \
+namespace {
+
+	template <typename ...ARGS>
+	void waitTasks (ARGS& ... args){
+		waitTasks(args...);
+	}
+
+	template <typename ...ARGS>
+	void waitTasks (std::future<void>& f, ARGS& ... args){
+
+		f.wait();
+		waitTasks(args...);
+	}
+
+	void waitTasks (std::future<void>& f){
+		f.wait();
+	}
+
+	void waitTasks (std::vector<std::future<void>>& fs){
+		for (auto& f : fs) f.wait();
+	}
+
+	template<unsigned N>
+	void waitTasks (std::array<std::future<void>, N>& fs){
+		for (auto& f : fs) f.wait();
+	}
+}
+
+	#define SYNC(...) \
+		waitTasks(__VA_ARGS__);
 
 	#define P_FOR(it, B, E, S, STMT) \
 		{ \
@@ -293,6 +331,7 @@
 			for (const auto& f : futures) f.wait(); \
 		}
 
+	typedef std::future<void> PROMISE;
 
 #endif
 
@@ -321,17 +360,21 @@
 	#define PARALLEL_CTX(STMT) \
 		STMT
 	
-    #define SPAWN(f, ...) \
+    #define SPAWN(taskName, f, ...) \
         auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--;}; \
 		if(current_threads < max_threads) irt::parallel(1, MAKE_UNIQUE(wrap)); \
-        else f(__VA_ARGS__);
+        else f(__VA_ARGS__);\
+		int taskName;
 
-	#define SYNC \
+	#define SYNC(...) \
 		irt::merge_all()
 
 	#define P_FOR(it, B, E, S, STMT) \
         auto MAKE_UNIQUE(wrap) = [&] (int it) { STMT; }; \
 		irt::pfor(B, E, S, MAKE_UNIQUE(wrap));
+
+	// dummy promise
+	typedef int PROMISE;
 
 #endif
 

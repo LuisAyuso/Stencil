@@ -124,23 +124,8 @@ namespace detail {
 
 
 	#undef FOR_DIMENSION
-
-
-	template<unsigned N, unsigned Dimensions>
-	struct next_dim{
-			static const int value = N-1;
-	};
-	template<unsigned Dimensions>
-	struct next_dim<0, Dimensions>{
-			static const int value = Dimensions-1;
-	};
-
-	template<unsigned Cur>
-	struct next_dim<Cur, 1>{
-			static const unsigned value = Cur;
-	};
 	
-	template <typename DataStorage, typename Kernel, int Dim>
+	template <typename DataStorage, typename Kernel, unsigned Dim>
 	inline void recursive_stencil_aux(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
@@ -182,10 +167,11 @@ namespace detail {
 				const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
 				assert(subSpaces.size() == 3);
 
-				SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, subSpaces[0], t0, t1);
-				recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>( data, k, subSpaces[1], t0, t1);
-				SYNC;
-				recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value> (data, k, subSpaces[2], t0, t1);
+				SPAWN ( left,  (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[0], t0, t1);
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>( data, k, subSpaces[1], t0, t1);
+				//SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
+				SYNC(left);
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[2], t0, t1);
 				
 			}
 			// Cut in W
@@ -195,11 +181,11 @@ namespace detail {
 				const auto& subSpaces  = Target_Hyperspace::template split_W<Dim> (z, slopeDim.first, slopeDim.second);
 				assert(subSpaces.size() == 3);
 
-				recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value> (data, k, subSpaces[0], t0, t1);
-
-				SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, subSpaces[1], t0, t1);
-				recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>( data, k, subSpaces[2], t0, t1);
-				SYNC;
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[0], t0, t1);
+				SPAWN ( left, (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
+				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>( data, k, subSpaces[2], t0, t1);
+				//SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[2], t0, t1);
+				SYNC(left);
 			}
 			// Time cut
 			else { // if (deltaT > 1 && deltaX > 0  && deltaY > 0){
@@ -235,7 +221,7 @@ namespace detail {
 			// notice that the original piramid has perfect vertical sides
 			auto z = data.getGlobalHyperspace();
 
-			(detail::recursive_stencil_aux<DataStorage, Kernel, Kernel::dimensions-1>)(data, k, z, 0, t);
+			(detail::recursive_stencil_aux<DataStorage, Kernel, 0>)(data, k, z, 0, t);
 
 		});
 	}

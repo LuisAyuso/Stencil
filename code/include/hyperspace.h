@@ -34,6 +34,8 @@ namespace stencil{
 		static const unsigned dimensions = Dimensions;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ ORTODOX  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		Hyperspace() = default;
+			
 
 		Hyperspace( const Hyperspace<Dimensions>& o)
 			: scopes(o.scopes), step(o.step)
@@ -185,9 +187,6 @@ namespace stencil{
 	int getStep() const{
 		return step;
 	}
-	int& getStep(){
-		return step;
-	}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spliting tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -300,6 +299,7 @@ namespace stencil{
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~ Cut with slopes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+	// ~~~~~~~~~~~  As template paramenters ~~~~~~~~~~~~~~
 		template <unsigned Dim >
 		inline CutDim split_slopes(const CutWithSlopes& cut) const{
 			return split_1d<Dim> (cut.split_value, *this, cut.da, cut.db);
@@ -325,6 +325,28 @@ namespace stencil{
 			return split_slopes<0>(cuts...);
 		}
 
+	// ~~~~~~~~~~~  As array ~~~~~~~~~~~~~~
+
+		template <unsigned Dim, unsigned long Cuts>
+		inline CutDim split_slopes_same_dim(const std::array<CutWithSlopes, Cuts>& cuts) const{
+
+			auto curHyp = *this;
+			CutDim res;
+			for (const auto& cut : cuts){
+
+				// each cut produces left/right + midle
+				auto tmp = split_1d<Dim> (cut.split_value, curHyp, cut.da, cut.db);
+
+				res.push_back(tmp[0]);
+				res.push_back(tmp[2]);
+
+				curHyp = tmp[1];
+			}
+			res.push_back(curHyp);
+
+			return res;
+		}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~ comparison ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		bool operator == (const Hyperspace<Dimensions>& o) const{
@@ -335,6 +357,7 @@ namespace stencil{
 					return false;
 				}
 			}
+
 			return true;
 		}
 

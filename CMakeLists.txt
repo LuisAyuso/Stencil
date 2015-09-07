@@ -15,13 +15,13 @@ endif()
 
 # -------------------------------------------------------------------
 
-file(GLOB_RECURSE sources "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" )
+file(GLOB_RECURSE sources "${CMAKE_CURRENT_SOURCE_DIR}/code/src/*.cpp" )
 
 
 #	Configure build 
 #	===============
 #	include path, compiler flags
-include_directories ( "include/" )
+include_directories ( "code/include/" )
 include_directories( ${CIMG_INCLUDE_DIR} )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -29,13 +29,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 # ========================== SEQUENTIAL =====================================
 
+# 1d exec
+add_executable("Stencil1D" "code/src/main1D.cxx" ${sources} )
+add_dependencies("Stencil1D" cimg)
+target_link_libraries("Stencil1D" ${X11_X11_LIB})
+
 # 2d exec
-add_executable("Stencil2D" "src/main2D.cxx" ${sources} )
+add_executable("Stencil2D" "code/src/main2D.cxx" ${sources} )
 add_dependencies("Stencil2D" cimg)
 target_link_libraries("Stencil2D" ${X11_X11_LIB})
 
 # 3d exec
-add_executable("Stencil3D" "src/main3D.cxx" ${sources} )
+add_executable("Stencil3D" "code/src/main3D.cxx" ${sources} )
 
 
 # ========================== OPENMP =====================================
@@ -44,15 +49,20 @@ if (NOT NO_OMP)
 find_package(OpenMP)
 if (OPENMP_FOUND)
 
+	# 1d exec 
+	add_executable	     ("Stencil1D-omp" "code/src/main1D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil1D-omp" PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS})
+	SET_TARGET_PROPERTIES("Stencil1D-omp" PROPERTIES LINK_FLAGS ${OpenMP_CXX_FLAGS})
+
 	# 2d exec
-	add_executable	     ("Stencil2D-omp" "src/main2D.cxx" ${sources} )
+	add_executable	     ("Stencil2D-omp" "code/src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-omp" cimg)
 	target_link_libraries("Stencil2D-omp" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-omp" PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS})
 	SET_TARGET_PROPERTIES("Stencil2D-omp" PROPERTIES LINK_FLAGS ${OpenMP_CXX_FLAGS})
 
 	# 3d exec
-	add_executable		 ("Stencil3D-omp" "src/main3D.cxx" ${sources} )
+	add_executable		 ("Stencil3D-omp" "code/src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-omp" PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS})
 	SET_TARGET_PROPERTIES("Stencil3D-omp" PROPERTIES LINK_FLAGS ${OpenMP_CXX_FLAGS})
 
@@ -64,8 +74,15 @@ endif()
 find_package(Cilk)
 if (CILK_FOUND)
 
+	# 1d exec
+	add_executable		 ("Stencil1D-cilk" "code/src/main1D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil1D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
+	if (Cilk_LINK_LIBRARIES)
+		SET_TARGET_PROPERTIES("Stencil1D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
+	endif()
+
 	# 2d exec
-	add_executable		 ("Stencil2D-cilk" "src/main2D.cxx" ${sources} )
+	add_executable		 ("Stencil2D-cilk" "code/src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-cilk" cimg)
 	target_link_libraries("Stencil2D-cilk" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
@@ -74,7 +91,7 @@ if (CILK_FOUND)
 	endif()
 
 	# 3d exec
-	add_executable		 ("Stencil3D-cilk" "src/main3D.cxx" ${sources} )
+	add_executable		 ("Stencil3D-cilk" "code/src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
 	if (Cilk_LINK_LIBRARIES)
 		SET_TARGET_PROPERTIES("Stencil3D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
@@ -84,15 +101,18 @@ endif()
 
 # ========================== CXX_ASYNC PARALLELISM =====================================
 
+	# 1d exec
+	add_executable		 ("Stencil1D-cxx" "code/src/main1D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil1D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
 	# 2d exec
-	add_executable		 ("Stencil2D-cxx" "src/main2D.cxx" ${sources} )
+	add_executable		 ("Stencil2D-cxx" "code/src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-cxx" cimg)
 	target_link_libraries("Stencil2D-cxx" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
 	# 3d exec
-	add_executable		 ("Stencil3D-cxx" "src/main3D.cxx" ${sources} )
+	add_executable		 ("Stencil3D-cxx" "code/src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
 
@@ -107,8 +127,12 @@ if(INSIEME_CODE_PATH)
 
 	message(STATUS "INSIEME RT: ${RT_HEADERS}")
 
+	# 1d exec
+	add_executable		 ("Stencil1D-insiemert" "code/src/main1D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil1D-insiemert" PROPERTIES COMPILE_FLAGS "-I ${RT_HEADERS} -I ${COMMON_HEADERS} -DINSIEME_RT -DIRT_STEAL_OTHER_POP_FRONT")
+
 	# 3d exec
-	add_executable		 ("Stencil3D-insiemert" "src/main3D.cxx" ${sources} )
+	add_executable		 ("Stencil3D-insiemert" "code/src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-insiemert" PROPERTIES COMPILE_FLAGS "-I ${RT_HEADERS} -I ${COMMON_HEADERS} -DINSIEME_RT -DIRT_STEAL_OTHER_POP_FRONT")
 
 
@@ -121,7 +145,7 @@ find_package(MPI)
 if(MPI_CXX_FOUND)
 
 	# 3d exec
-	add_executable		 ("Stencil3D-mpi" "src/main3D.cxx" ${sources} )
+	add_executable		 ("Stencil3D-mpi" "code/src/main3D.cxx" ${sources} )
 
 endif()
 
@@ -131,8 +155,7 @@ endif()
 if (NOT NO_TEST)
 	message(STATUS " ~~~~~~~~~~~~Compile tests ~~~~~~~~~~~~~")
 
-    include (gtest)
-    file(GLOB_RECURSE test_sources "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cc" )
+    file(GLOB_RECURSE test_sources "${CMAKE_CURRENT_SOURCE_DIR}/code/test/*.cc" )
 
     foreach( test_source ${test_sources} )
 
