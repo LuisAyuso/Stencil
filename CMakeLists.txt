@@ -24,6 +24,18 @@ if (CMAKE_COMPILER_IS_GNUCC)
 
 endif()
 
+# -------------------------------------------------------------------
+# check for intel compiler if target is mic
+
+if (COMPILE_MIC)
+
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
+	else()
+		message( FATAL_ERROR "mic requires intel compiler")
+	endif()
+
+endif()
 
 
 
