@@ -95,9 +95,9 @@ int main(int argc, char *argv[]) {
 
 	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	ImageSpace recBuffer( {size}, data);
-	ImageSpace iteBuffer( {size}, data);
-	ImageSpace invBuffer( {size}, data);
+	ImageSpace recBuffer( {{size}}, data);
+	ImageSpace iteBuffer( {{size}}, data);
+	ImageSpace invBuffer( {{size}}, data);
 
 	std::cout << " ~~~~~~~~~~~~~ GO ~~~~~~~~~~~~~~~~~~~" <<std::endl;
 

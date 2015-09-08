@@ -214,7 +214,7 @@ namespace stencil{
 			right.scopes[Dim].a = right.scopes[Dim].b;
 			right.step ++;
 
-			return {central, left, right};
+			return {{central, left, right}};
 		}
 
 		/**
@@ -240,7 +240,7 @@ namespace stencil{
 			central.scopes[Dim].db = -1 * db;
 			central.step ++;
 
-			return {left, right, central};
+			return {{left, right, central}};
 		}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~ Generic cut with n dimensions ~~~~~~~~~~~~~~~~~~~~~~~~~~

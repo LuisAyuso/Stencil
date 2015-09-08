@@ -141,14 +141,14 @@ namespace detail {
 	};
 	
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_aux(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_aux(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 		static_assert(CUT >= 3, "cut off must be greater than 3");
 
 		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
 
-		auto deltaT = (int)t1-t0;
+		const auto deltaT = (int)t1-t0;
 		assert(t1 >= t0);
 		assert(deltaT >= 0);
 
@@ -160,13 +160,13 @@ namespace detail {
 		
 		else{
 
-			auto a  = z.a(Dim);
-			auto b  = z.b(Dim);
-			auto da = z.da(Dim);
-			auto db = z.db(Dim);
-			auto deltaBase = b - a;
-			auto deltaTop = (b + db * deltaT) - (a + da * deltaT);
-			auto slopeDim = k.getSlope(Dim);
+			const auto a  = z.a(Dim);
+			const auto b  = z.b(Dim);
+			const auto da = z.da(Dim);
+			const auto db = z.db(Dim);
+			const auto deltaBase = b - a;
+			const auto deltaTop = (b + db * deltaT) - (a + da * deltaT);
+			const auto slopeDim = k.getSlope(Dim);
 
 			//std::cout << " a:" << a << " b: "<< b << " da:" << da << " db:" << db << std::endl;
 			//std::cout << " deltaBase:" << deltaBase << " deltaTop:" << deltaTop <<  " deltaT:" << deltaT<< std::endl;
@@ -176,7 +176,7 @@ namespace detail {
 			// Cut in M
 			if (deltaBase >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){
 
-				auto split = a + deltaBase /2;
+				const auto split = a + deltaBase /2;
 
 				//std::cout << " cut in M " << split << std::endl;
 				const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
@@ -186,7 +186,6 @@ namespace detail {
 				recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>( data, k, subSpaces[1], t0, t1);
 				SYNC(left);
 				recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value> (data, k, subSpaces[2], t0, t1);
-				
 			}
 			// Cut in W
 			else if (deltaTop >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){ 
@@ -205,7 +204,7 @@ namespace detail {
 			else { // if (deltaT > 1 && deltaX > 0  && deltaY > 0){
 				//std::cout << "time cut: " << z << " from " << t0 << " to " << t1 <<std::endl;
 
-				int halfTime = deltaT/2;
+				const int halfTime = deltaT/2;
 				assert(halfTime >= 1);
 
 				//std::cout << " t1: " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;

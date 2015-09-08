@@ -32,12 +32,14 @@ if (COMPILE_MIC)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
 	else()
-		message( FATAL_ERROR "mic requires intel compiler")
+		message( FATAL_ERROR "mic requires intel compiler, you could use gcc... up to you")
 	endif()
 
+    set(NO_TEST True)
+
+	# the mic binary can not run and cilk test fails, since
+	# this is intel mic, enable it. It should work
 endif()
-
-
 
 # -------------------------------------------------------------------
 
@@ -48,7 +50,6 @@ file(GLOB_RECURSE sources "${CMAKE_CURRENT_SOURCE_DIR}/code/src/*.cpp" )
 #	===============
 #	include path, compiler flags
 include_directories ( "code/include/" )
-include_directories( ${CIMG_INCLUDE_DIR} )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -57,11 +58,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 # 1d exec
 add_executable("Stencil1D" "code/src/main1D.cxx" ${sources} )
-add_dependencies("Stencil1D" cimg)
-target_link_libraries("Stencil1D" ${X11_X11_LIB})
 
 # 2d exec
 add_executable("Stencil2D" "code/src/main2D.cxx" ${sources} )
+include_directories("Stencil2D" ${CIMG_INCLUDE_DIR} )
 add_dependencies("Stencil2D" cimg)
 target_link_libraries("Stencil2D" ${X11_X11_LIB})
 
@@ -83,6 +83,7 @@ if (OPENMP_FOUND)
 	# 2d exec
 	add_executable	     ("Stencil2D-omp" "code/src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-omp" cimg)
+	include_directories	 ("Stencil2D-omp" ${CIMG_INCLUDE_DIR} )
 	target_link_libraries("Stencil2D-omp" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-omp" PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS})
 	SET_TARGET_PROPERTIES("Stencil2D-omp" PROPERTIES LINK_FLAGS ${OpenMP_CXX_FLAGS})
@@ -98,7 +99,7 @@ endif()
 # ========================== CILK =====================================
 
 find_package(Cilk)
-if (CILK_FOUND)
+if (CILK_FOUND OR COMPILE_MIC)
 
 	# 1d exec
 	add_executable		 ("Stencil1D-cilk" "code/src/main1D.cxx" ${sources} )
@@ -110,6 +111,7 @@ if (CILK_FOUND)
 	# 2d exec
 	add_executable		 ("Stencil2D-cilk" "code/src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-cilk" cimg)
+	include_directories	 ("Stencil2D-cilk" ${CIMG_INCLUDE_DIR} )
 	target_link_libraries("Stencil2D-cilk" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
 	if (Cilk_LINK_LIBRARIES)
@@ -125,7 +127,8 @@ if (CILK_FOUND)
 
 endif()
 
-# ========================== CXX_ASYNC PARALLELISM =====================================
+# ========================== CXX_ASYNC PARALLELISM ==================================
+if (NOT COMPILE_MIC) # sorry, mic does not like c++11 async
 
 	# 1d exec
 	add_executable		 ("Stencil1D-cxx" "code/src/main1D.cxx" ${sources} )
@@ -134,6 +137,7 @@ endif()
 	# 2d exec
 	add_executable		 ("Stencil2D-cxx" "code/src/main2D.cxx" ${sources} )
 	add_dependencies	 ("Stencil2D-cxx" cimg)
+	include_directories	 ("Stencil2D-cxx" ${CIMG_INCLUDE_DIR} )
 	target_link_libraries("Stencil2D-cxx" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
@@ -141,6 +145,7 @@ endif()
 	add_executable		 ("Stencil3D-cxx" "code/src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
+endif()
 
 # ========================== INSIEME RT =====================================
 
