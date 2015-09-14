@@ -181,7 +181,7 @@ namespace stencil{
 
 		#define FROM_DIMENSION(N) \
 			template<typename E, size_t D, unsigned C>\
-			inline typename std::enable_if< is_ge<D, N>::value, int>::type
+			inline typename std::enable_if< is_ge<D, N>::value, const int>::type
 
 		FROM_DIMENSION(1) getW(const BufferSet<E,D,C>& b){
 			return b.dimension_sizes[0];
