@@ -33,14 +33,10 @@ namespace example_kernels{
 
 			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
 
-				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				unsigned sum = 0;
-
-				
 				for (unsigned x = MAX(0, ((int)i)-1); x < MIN(getW(data), i+1); ++x){
 					for (unsigned y = MAX(0, ((int)j)-1); y < MIN(j+1, getH(data)); ++y){	
 
-				//		std::cout << "(" << x << "," << y << ")" << "(" << i << "," << j << ")" << std::endl;
 						sum += (getElem(data, x, y, t) > 125)? 1 : 0;
 					}
 				}

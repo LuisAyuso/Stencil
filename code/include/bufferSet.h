@@ -9,6 +9,8 @@
 
 #include "hyperspace.h"
 
+#include <string.h>
+
 namespace stencil{
 	
 
@@ -117,24 +119,24 @@ namespace stencil{
 			for (const auto& i : dimension_sizes) out << i << ",";
 			out << "](" << buffer_size<< "elems)x" << copies;
 
-//			for (int c=0; c < Copies; ++c){
-//				out << " {\n";
-//				for ( auto i = 0; i< buffer_size; ++i) {
-//					
-//					if(i!=0){
-//						auto x = i;
-//						for (auto d = 0; d< dimensions; ++d) {
-//							if ((x % dimension_sizes[d]) == 0) {
-//								std::cout << "\n";
-//								x = x/dimension_sizes[d];
-//							}	
-//							else break;
-//						}
-//					}
-//					out << storage[c*buffer_size + i] << ",";
-//				}
-//				out << "\n}";
-//			}
+			for (int c=0; c < Copies; ++c){
+				out << " {\n";
+				for ( auto i = 0; i< buffer_size; ++i) {
+					
+					if(i!=0){
+						auto x = i;
+						for (auto d = 0; d< dimensions; ++d) {
+							if ((x % dimension_sizes[d]) == 0) {
+								std::cout << "\n";
+								x = x/dimension_sizes[d];
+							}	
+							else break;
+						}
+					}
+					out << storage[c*buffer_size + i] << ",";
+				}
+				out << "\n}";
+			}
 
 			return out;
 		}
@@ -175,6 +177,7 @@ namespace stencil{
 		}
 		
 		#undef FOR_DIMENSION
+
 
 		#define FROM_DIMENSION(N) \
 			template<typename E, size_t D, unsigned C>\

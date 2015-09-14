@@ -61,9 +61,6 @@ add_executable("Stencil1D" "code/src/main1D.cxx" ${sources} )
 
 # 2d exec
 add_executable("Stencil2D" "code/src/main2D.cxx" ${sources} )
-include_directories("Stencil2D" ${CIMG_INCLUDE_DIR} )
-add_dependencies("Stencil2D" cimg)
-target_link_libraries("Stencil2D" ${X11_X11_LIB})
 
 # 3d exec
 add_executable("Stencil3D" "code/src/main3D.cxx" ${sources} )
@@ -82,9 +79,6 @@ if (OPENMP_FOUND)
 
 	# 2d exec
 	add_executable	     ("Stencil2D-omp" "code/src/main2D.cxx" ${sources} )
-	add_dependencies	 ("Stencil2D-omp" cimg)
-	include_directories	 ("Stencil2D-omp" ${CIMG_INCLUDE_DIR} )
-	target_link_libraries("Stencil2D-omp" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-omp" PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS})
 	SET_TARGET_PROPERTIES("Stencil2D-omp" PROPERTIES LINK_FLAGS ${OpenMP_CXX_FLAGS})
 
@@ -110,9 +104,6 @@ if (CILK_FOUND OR COMPILE_MIC)
 
 	# 2d exec
 	add_executable		 ("Stencil2D-cilk" "code/src/main2D.cxx" ${sources} )
-	add_dependencies	 ("Stencil2D-cilk" cimg)
-	include_directories	 ("Stencil2D-cilk" ${CIMG_INCLUDE_DIR} )
-	target_link_libraries("Stencil2D-cilk" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES COMPILE_FLAGS "-DCILK ${Cilk_CXX_FLAGS}")
 	if (Cilk_LINK_LIBRARIES)
 		SET_TARGET_PROPERTIES("Stencil2D-cilk" PROPERTIES LINK_FLAGS ${Cilk_LINK_LIBRARIES})
@@ -136,9 +127,6 @@ if (NOT COMPILE_MIC) # sorry, mic does not like c++11 async
 
 	# 2d exec
 	add_executable		 ("Stencil2D-cxx" "code/src/main2D.cxx" ${sources} )
-	add_dependencies	 ("Stencil2D-cxx" cimg)
-	include_directories	 ("Stencil2D-cxx" ${CIMG_INCLUDE_DIR} )
-	target_link_libraries("Stencil2D-cxx" ${X11_X11_LIB})
 	SET_TARGET_PROPERTIES("Stencil2D-cxx" PROPERTIES COMPILE_FLAGS "-DCXX_ASYNC")
 
 	# 3d exec
@@ -162,6 +150,9 @@ if(INSIEME_CODE_PATH)
 	add_executable		 ("Stencil1D-insiemert" "code/src/main1D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil1D-insiemert" PROPERTIES COMPILE_FLAGS "-I ${RT_HEADERS} -I ${COMMON_HEADERS} -DINSIEME_RT -DIRT_STEAL_OTHER_POP_FRONT")
 
+	add_executable		 ("Stencil2D-insiemert" "code/src/main2D.cxx" ${sources} )
+	SET_TARGET_PROPERTIES("Stencil2D-insiemert" PROPERTIES COMPILE_FLAGS "-I ${RT_HEADERS} -I ${COMMON_HEADERS} -DINSIEME_RT -DIRT_STEAL_OTHER_POP_FRONT")
+
 	# 3d exec
 	add_executable		 ("Stencil3D-insiemert" "code/src/main3D.cxx" ${sources} )
 	SET_TARGET_PROPERTIES("Stencil3D-insiemert" PROPERTIES COMPILE_FLAGS "-I ${RT_HEADERS} -I ${COMMON_HEADERS} -DINSIEME_RT -DIRT_STEAL_OTHER_POP_FRONT")
@@ -178,6 +169,16 @@ if(MPI_CXX_FOUND)
 	# 3d exec
 	add_executable		 ("Stencil3D-mpi" "code/src/main3D.cxx" ${sources} )
 
+endif()
+
+
+# ================================= IMAGE VERSION =================================
+
+if (IMAGE)
+	
+	add_executable	("StencilImg" "code/src/image2D.cxx" ${sources} )
+	add_dependencies("StencilImg" cimg)
+	target_link_libraries("StencilImg" ${X11_X11_LIB})
 endif()
 
 

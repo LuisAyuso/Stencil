@@ -2,36 +2,28 @@
 
 #include <cassert>
 
-#include <CImg.h>
-
 #include "hyperspace.h"
 #include "kernel.h"
 #include "kernels_2D.h"
 #include "bufferSet.h"
-#include "rec_stencil.h"
-//#include "rec_stencil_multiple_splits.h"
+#include "rec_stencil_inverted_dims.h"
 
 #include "timer.h" 
 
 using namespace stencil;
-using namespace cimg_library;
 
 //typedef unsigned char PixelType;
 //typedef float PixelType;
-typedef double PixelType;
+typedef bool PixelType;
+//typedef double PixelType;
 typedef BufferSet<PixelType, 2> ImageSpace;
 
  // #######################################################################################
 
 bool REC = false, IT = false, INV = false, ALL = false, VALIDATE=true, VISUALIZE=false;
 
-	//const char* input_file = "../eight.png";
-	//const char*  input_file = "../sixteen.png";
-	//const char*  input_file = "../emo.jpg";
-	//const char*  input_file = "../lena.png";
-	char* input_file = nullptr;
-	//const char* input_file = "../skogafossBW.png";
 	int timeSteps = 10;
+	int size = 10;
 
 
 void help(){
@@ -54,12 +46,11 @@ void parse_args(int argc, char *argv[]){
 		else if(param == "inv") {
 			INV = true;
 		}
-		else if( param == "-i"){
+		else if (param == "-s"){
 			i++;
-			input_file = argv[i];
+			size = std::atoi(argv[i]);
 		}
 		else if (param == "-t"){
-
 			i++;
 			timeSteps = std::atoi(argv[i]);
 		}
@@ -70,9 +61,6 @@ void parse_args(int argc, char *argv[]){
 		}
 		else if (param == "-no-val"){
 			VALIDATE = false;
-		}
-		else if (param == "-v"){
-			VISUALIZE = true;
 		}
 		else {
 
@@ -86,11 +74,6 @@ void parse_args(int argc, char *argv[]){
 	ALL = !(IT || REC || INV);
 
 	VALIDATE =  ALL;
-
-	if (VISUALIZE && !ALL) {
-		std::cout << "can only visualize when running ALL" << std::endl;
-		exit(-1);
-	}
 }
 
 
@@ -101,35 +84,31 @@ int main(int argc, char *argv[]) {
 	// ~~~~~~~~~~~~~~~ Input problem parameters ~~~~~~~~~~~~~~~~~~~~~
 	parse_args(argc, argv);
 
-	if (!input_file) {
-		help();
-		return -1;
-	}
+	// ~~~~~~~~~~~~~~~ Generate Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+	std::cout <<" execute " << size << "^2 with " << timeSteps << " time steps ";
+	std::cout << "(" << utils::getSizeHuman(sizeof(PixelType) * size*size*size) << ")" << std::endl;
 
-	// ~~~~~~~~~~~~~~~ Load image ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	CImg<PixelType> orgImage(input_file);
-	assert(orgImage.size ()  == (unsigned)orgImage.width() *  (unsigned)orgImage.height() && "only Grayscale allowed");
-
-	std::cout <<" execute " << input_file << " with " << timeSteps << " time steps ";
-	std::cout << "(" << (sizeof(PixelType) * orgImage.size ()) << "Bytes)" << std::endl;
+	PixelType data[size*size];
+	//for (auto& e : data) { e = (float)rand()/RAND_MAX; }
+	for (auto& e : data) { e = rand() & 0x1; }
 
 	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
-	ImageSpace recBuffer( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, orgImage.data());
-	ImageSpace iteBuffer ( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, orgImage.data());
-	ImageSpace invBuffer( {(unsigned)orgImage.width(), (unsigned)orgImage.height() }, orgImage.data());
-	assert(orgImage.size () == iteBuffer.getSize());
-	assert(orgImage.size () == recBuffer.getSize());
-	assert(orgImage.size () == invBuffer.getSize());
+	ImageSpace recBuffer( { size, size }, data);
+	ImageSpace iteBuffer( { size, size }, data);
+	ImageSpace invBuffer( { size, size }, data);
+
+	std::cout << " ~~~~~~~~~~~~~ GO ~~~~~~~~~~~~~~~~~~~" <<std::endl;
 
 	// ~~~~~~~~~~~~~~~~~ create kernel ~~~~~~~~~~~~~~~~~~~~~~~
 	
-	//using KernelType = example_kernels::Color_k<PixelType> kernel(timeSteps);
-	//using KernelType = example_kernels::Copy_k<PixelType>;
-	//using KernelType = example_kernels::Life_k<PixelType>;
-	//using KernelType = example_kernels::Blur3_k<PixelType>;
-	//using KernelType = example_kernels::Blur5_k<PixelType>;
-	//using KernelType = example_kernels::BlurN_k<PixelType, 7>;
-	using KernelType = example_kernels::BlurN_k<ImageSpace, 9>;
+	//using KernelType = example_kernels::Color_k<ImageSpace> kernel(timeSteps);
+	//using KernelType = example_kernels::Copy_k<ImageSpace>;
+	using KernelType = example_kernels::Life_k<ImageSpace>;
+	//using KernelType = example_kernels::Blur3_k<ImageSpace>;
+	//using KernelType = example_kernels::Blur5_k<ImageSpace>;
+	//using KernelType = example_kernels::BlurN_k<ImageSpace, 7>;
+	//using KernelType = example_kernels::BlurN_k<ImageSpace, 9>;
 
 	KernelType kernel;
 
@@ -177,28 +156,9 @@ int main(int argc, char *argv[]) {
 		else std::cout << "VALIDATION OK" << std::endl;
 	}
 
-	//std::cout << recBuffer << std::endl;
-	//std::cout << invBuffer << std::endl;
-	//std::cout << iteBuffer << std::endl;
-
-	// ~~~~~~~~~~~~~~~~ Plot and Validate  ~~~~~~~~~~~~~~~~~~~~~~~~~~
-	if (VISUALIZE){
-
-		CImg<PixelType> recImage(recBuffer.getPointer(timeSteps%2), getW(recBuffer), getH(recBuffer));
-		CImg<PixelType> iteImage(iteBuffer.getPointer(timeSteps%2), getW(iteBuffer), getH(iteBuffer));
-		CImg<PixelType> invImage(invBuffer.getPointer(timeSteps%2), getW(invBuffer), getH(invBuffer));
-
-		orgImage = orgImage.get_resize	(800, 800, -100, -100, 1);
-		recImage = recImage.get_resize	(800, 800, -100, -100, 1);
-		iteImage = iteImage.get_resize	(800, 800, -100, -100, 1);
-		invImage = invImage.get_resize	(800, 800, -100, -100, 1);
-
-		CImgDisplay original(orgImage, "original"), rec(recImage, "rec"), par(iteImage, "iter"), inv(invImage, "inverted loop");
-	
-		while (!original.is_closed()){
-			original.wait();
-		}
-	}	
+//	std::cout << recBuffer << std::endl;
+//	std::cout << invBuffer << std::endl;
+//	std::cout << iteBuffer << std::endl;
 
 	return 0;
 }
