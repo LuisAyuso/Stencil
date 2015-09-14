@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 
 
+#include <chrono>
+#include <thread>
+
 #include "timer.h" 
 
 
@@ -50,5 +53,17 @@ TEST(Timer, lambda_3){
 	time_call(f, val, val2);
 	val++;
 	time_call(f, val, val2);
+
+}
+
+TEST(Timer, precission){
+
+	auto f = [&] (){
+	    std::chrono::seconds two(2);
+		std::this_thread::sleep_for(two);
+	};
+
+	auto duration = time_call(f);
+	EXPECT_GT(duration, 2000);
 
 }
