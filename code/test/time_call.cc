@@ -64,6 +64,6 @@ TEST(Timer, precission){
 	};
 
 	auto duration = time_call(f);
-	EXPECT_GT(duration, 2000);
+	EXPECT_TRUE(duration >= 2000);
 
 }
