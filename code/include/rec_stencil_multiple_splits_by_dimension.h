@@ -8,9 +8,10 @@
 #include "tools.h"
 
 #include "dispatch.h"
+#include "tools/instrument.h"
 
 #include <thread>
-#include<sstream>
+#include <sstream>
 
 
 #ifndef TIME_CUTOFF 
@@ -33,6 +34,9 @@ namespace detail {
 
 		FOR_DIMENSION(1) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
+#ifdef INSTRUMENT
+			auto swt = instrument::instrument_base_case(z);
+#endif
 			int ia = z.a(0);
 			int ib = z.b(0);
 
@@ -44,10 +48,15 @@ namespace detail {
 				ia += z.da(0);
 				ib += z.db(0);
 			}
+#ifdef INSTRUMENT
+			instrument::instrument_end(swt);
+#endif	
 		}
 
 		FOR_DIMENSION(2) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
-
+#ifdef INSTRUMENT
+			auto swt = instrument::instrument_base_case(z);
+#endif
 			int ia = z.a(0);
 			int ib = z.b(0);
 			int ja = z.a(1);
@@ -65,9 +74,16 @@ namespace detail {
 				ja += z.da(1);
 				jb += z.db(1);
 			}
+#ifdef INSTRUMENT
+			instrument::instrument_end(swt);
+#endif
 		}
 
 		FOR_DIMENSION(3) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+#ifdef INSTRUMENT
+			auto swt = instrument::instrument_base_case(z);
+#endif
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -92,6 +108,10 @@ namespace detail {
 				ka += z.da(2);
 				kb += z.db(2);
 			}
+#ifdef INSTRUMENT
+			instrument::instrument_end(swt);
+#endif
+
 		}
 
 		FOR_DIMENSION(4) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){

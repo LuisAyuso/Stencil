@@ -42,6 +42,13 @@ if (COMPILE_MIC)
 endif()
 
 # -------------------------------------------------------------------
+# add flag to compile trace instrumentation
+
+if (INSTRUMENT)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINSTRUMENT=1")
+endif()
+
+# -------------------------------------------------------------------
 
 file(GLOB_RECURSE sources "${CMAKE_CURRENT_SOURCE_DIR}/code/src/*.cpp" )
 
