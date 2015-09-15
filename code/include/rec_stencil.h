@@ -126,7 +126,7 @@ namespace detail {
 	#undef FOR_DIMENSION
 	
 	template <typename DataStorage, typename Kernel, unsigned Dim>
-	inline void recursive_stencil_aux(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_original(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 		static_assert(CUT >= 3, "cut off must be greater than 3");
@@ -167,11 +167,11 @@ namespace detail {
 				const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
 				assert(subSpaces.size() == 3);
 
-				SPAWN ( left,  (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[0], t0, t1);
-				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>( data, k, subSpaces[1], t0, t1);
-				//SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
+				SPAWN ( left,  (recursive_stencil_original<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[0], t0, t1);
+				recursive_stencil_original<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>( data, k, subSpaces[1], t0, t1);
+				//SPAWN ( (recursive_stencil_original<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
 				SYNC(left);
-				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[2], t0, t1);
+				recursive_stencil_original<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[2], t0, t1);
 				
 			}
 			// Cut in W
@@ -181,10 +181,10 @@ namespace detail {
 				const auto& subSpaces  = Target_Hyperspace::template split_W<Dim> (z, slopeDim.first, slopeDim.second);
 				assert(subSpaces.size() == 3);
 
-				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[0], t0, t1);
-				SPAWN ( left, (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
-				recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>( data, k, subSpaces[2], t0, t1);
-				//SPAWN ( (recursive_stencil_aux<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[2], t0, t1);
+				recursive_stencil_original<DataStorage, Kernel, (Dim+1)%Kernel::dimensions> (data, k, subSpaces[0], t0, t1);
+				SPAWN ( left, (recursive_stencil_original<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[1], t0, t1);
+				recursive_stencil_original<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>( data, k, subSpaces[2], t0, t1);
+				//SPAWN ( (recursive_stencil_original<DataStorage, Kernel, (Dim+1)%Kernel::dimensions>), data, k, subSpaces[2], t0, t1);
 				SYNC(left);
 			}
 			// Time cut
@@ -195,7 +195,7 @@ namespace detail {
 				assert(halfTime >= 1);
 
 				//std::cout << " t1: " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;
-				recursive_stencil_aux<DataStorage, Kernel, Dim>(data, k, z, t0, t0+halfTime);
+				recursive_stencil_original<DataStorage, Kernel, Dim>(data, k, z, t0, t0+halfTime);
 
 				// We must update all the dimensions as we move in time.... 
 				auto upZoid = z;
@@ -205,7 +205,7 @@ namespace detail {
 				}
 
 				//std::cout << " t2:" << upZoid << " from " << t0+halfTime << " to " << t1 <<std::endl;
-				recursive_stencil_aux<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime , t1);
+				recursive_stencil_original<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime , t1);
 			}
 		}
 	}
@@ -221,7 +221,7 @@ namespace detail {
 			// notice that the original piramid has perfect vertical sides
 			auto z = data.getGlobalHyperspace();
 
-			(detail::recursive_stencil_aux<DataStorage, Kernel, 0>)(data, k, z, 0, t);
+			(detail::recursive_stencil_original<DataStorage, Kernel, 0>)(data, k, z, 0, t);
 
 		});
 	}

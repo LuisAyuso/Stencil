@@ -64,8 +64,11 @@
 
 	#include <omp.h>
 
+	// dummy promise for future values, sync is done based on threadgroup
+	typedef int PROMISE;
+
 	namespace {
-		static auto max_threads = omp_get_thread_limit() * THREAD_CUTOFF;
+		static auto max_threads = 16; // omp_get_thread_limit() * THREAD_CUTOFF;
 		std::atomic_long current_threads (0);
 	}
     
@@ -76,11 +79,9 @@
 	
     #define SPAWN(taskName, f, ...) \
         auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--; }; \
-		if(current_threads  < max_threads) {\
-			_Pragma( "omp task untied") \
-			MAKE_UNIQUE(wrap)(); } \
-		else f(__VA_ARGS__); \
-		int taskName;
+		_Pragma( "omp task untied if (current_threads  < max_threads)") \
+		MAKE_UNIQUE(wrap)(); \
+		PROMISE taskName;
 
 	#define SYNC(...) \
 		_Pragma( "omp taskwait ")
@@ -90,8 +91,6 @@
 		_Pragma( "  omp for ") \
 		for (auto it = B; it < E; it += S)   STMT
 
-	// dummy promise for future values, sync is done based on threadgroup
-	typedef int PROMISE;
 
 #endif
 

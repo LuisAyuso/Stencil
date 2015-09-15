@@ -9,6 +9,7 @@
 
 #include "dispatch.h"
 
+#include <thread>
 #include<sstream>
 
 
@@ -17,7 +18,7 @@
 #endif 
 
 #ifndef SPATIAL_CUTS 
-#  define SPATIAL_CUTS 1
+#  define SPATIAL_CUTS 8
 #endif 
 
 
@@ -146,12 +147,12 @@ namespace detail {
 	};
 	
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_aux(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_multiple(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 		static_assert(TIME_CUTOFF >= 3, "cut off must be greater  than 2");
 
-		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
+	//	std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << " in dim:" << Dim <<  std::endl;
 
 		auto deltaT = (int)t1-t0;
 		assert(t1 >= t0);
@@ -164,31 +165,29 @@ namespace detail {
 		}
 		else{
 
-			auto a  = z.a(Dim);
-			auto b  = z.b(Dim);
-			auto da = z.da(Dim);
-			auto db = z.db(Dim);
-			auto deltaBase = b - a;
-			auto deltaTop = (b + db * deltaT) - (a + da * deltaT);
-			auto slopeDim = k.getSlope(Dim);
+			const auto a  = z.a(Dim);
+			const auto b  = z.b(Dim);
+			const auto da = z.da(Dim);
+			const auto db = z.db(Dim);
+			const auto deltaBase = b - a;
+			const auto deltaTop = (b + db * deltaT) - (a + da * deltaT);
+			const auto slopeDim = k.getSlope(Dim);
 
-			//std::cout << " a:" << a << " b: "<< b << " da:" << da << " db:" << db << std::endl;
-			//std::cout << " kda:" << slopeDim.first << " kdb:" << slopeDim.second << std::endl;
-			//std::cout << " deltaBase:" << deltaBase << " deltaTop:" << deltaTop <<  " deltaT:" << deltaT<< std::endl;
-			//std::cout << " M cut: " << (SPATIAL_CUTS+1)*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT << std::endl;
-			//std::cout << " W cut: " << 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT << std::endl;
+			const auto minimum_spatial_cut = (SPATIAL_CUTS+1)*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT;
 
-			// Cut in M
-			if (deltaBase >= (SPATIAL_CUTS+1)*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){
+			// cut in W
+			if (da >= db && deltaBase > minimum_spatial_cut){
 
-				// generate array of splits
+		//		std::cout <<" cut W " << std::endl;
+
+				// generate array of cuts
 				std::array<CutWithSlopes, SPATIAL_CUTS> cuts;
-				auto splitStep = (deltaBase/(SPATIAL_CUTS+1));
-				assert(splitStep > 0);
+				const auto cutStep = (deltaBase/(SPATIAL_CUTS+1));
+				assert(cutStep > 0);
 
-				//std::cout << "cut in M  " << splitStep << std::endl;
+				//std::cout << "cut in M  " << cutStep << std::endl;
 				int i = 0;
-				for (auto cut = a+splitStep; cut < b; cut+= splitStep){
+				for (auto cut = a+cutStep; cut < b; cut+= cutStep){
 					assert (cut > a &&  cut < b);
 
 					cuts[i].split_value = cut;
@@ -197,53 +196,78 @@ namespace detail {
 					i++;
 				}
 
-
-
-				auto subHypSpaces = z.template split_slopes_same_dim<Dim>(cuts);
+				const auto subHypSpaces = z.template split_slopes_same_dim<Dim>(cuts);
 				assert(subHypSpaces.size() == 2*SPATIAL_CUTS+1);
 
-				auto basestep = z.getStep();
-
-				// execute base first, secondary will have step = step+1
+				const auto basestep = z.getStep();
 				std::array<PROMISE, SPATIAL_CUTS+1> futures;
-				i=0;
-				for (auto x : subHypSpaces) {
+				i = 0;
+				for (const auto& x : subHypSpaces){
 					if (x.getStep() == basestep){
-						SPAWN ( future,  (recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
+						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
 						std::swap (futures[i++], future);
 					}
 				}
-				if (i != SPATIAL_CUTS+1){
-					printf( "%lu has: %d primaries  ERRORRRR \n", std::this_thread::get_id(), i);
-					abort();
-				}
+				assert(i == SPATIAL_CUTS+1);
 				SYNC(futures);
 
-				// execute the secondary
-				i=0;
-				for (auto x : subHypSpaces) {
-					if (x.getStep() != basestep){
-						SPAWN ( future,  (recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
+				i = 0;
+				for (const auto& x : subHypSpaces){
+					if (x.getStep() == basestep+1){
+						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
+						std::swap (futures[i++], future);
+					}
+				}
+				assert(i == SPATIAL_CUTS);
+				SYNC(futures);
+			}
+			// else cut in M
+			else if (da < db && deltaTop > minimum_spatial_cut){
+
+		//		std::cout <<" cut M" << std::endl;
+
+				// generate array of cuts
+				std::array<CutWithSlopes, SPATIAL_CUTS> cuts;
+				const auto cutStep = (deltaBase/(SPATIAL_CUTS+1));
+				assert(cutStep > 0);
+
+				//std::cout << "cut in M  " << cutStep << std::endl;
+				int i = 0;
+				for (auto cut = a+cutStep; cut < b; cut+= cutStep){
+					assert (cut > a &&  cut < b);
+
+					cuts[i].split_value = cut;
+					cuts[i].da = -1*slopeDim.first;
+					cuts[i].db = -1*slopeDim.second;
+					i++;
+				}
+
+				const auto subHypSpaces = z.template split_slopes_same_dim<Dim>(cuts);
+				assert(subHypSpaces.size() == 2*SPATIAL_CUTS+1);
+
+				const auto basestep = z.getStep();
+				std::array<PROMISE, SPATIAL_CUTS+1> futures;
+				i = 0;
+				for (const auto& x : subHypSpaces){
+					if (x.getStep() == basestep){
+						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
 						std::swap (futures[i++], future);
 					}
 				}
 				assert(i == SPATIAL_CUTS);
 				SYNC(futures);
 
+				i = 0;
+				for (const auto& x : subHypSpaces){
+					if (x.getStep() == basestep+1){
+						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
+						std::swap (futures[i++], future);
+					}
+				}
+				assert(i == SPATIAL_CUTS+1);
+				SYNC(futures);
+
 			}
-//			// Cut in W
-//			else if (deltaTop >= (SPATIAL_CUTS+1)*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){ 
-//
-//				std::cout << " cut in W " << std::endl;
-//				const auto& subSpaces  = Target_Hyperspace::template split_W<Dim> (z, slopeDim.first, slopeDim.second);
-//				assert(subSpaces.size() == 3);
-//
-//				recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value> (data, k, subSpaces[0], t0, t1);
-//
-//				SPAWN ( future,  (recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, subSpaces[1], t0, t1);
-//				recursive_stencil_aux<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>( data, k, subSpaces[2], t0, t1);
-//				SYNC(future);
-//			}
 			// Time cut
 			else { // if (deltaT > 1 && deltaX > 0  && deltaY > 0){
 
@@ -252,7 +276,7 @@ namespace detail {
 				assert(halfTime >= 1);
 
 				//std::cout << " t1: " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;
-				recursive_stencil_aux<DataStorage, Kernel, Dim>(data, k, z, t0, t0+halfTime);
+				recursive_stencil_multiple<DataStorage, Kernel, Dim>(data, k, z, t0, t0+halfTime);
 
 				// We must update all the dimensions as we move in time.... 
 				auto upZoid = z;
@@ -262,7 +286,7 @@ namespace detail {
 				}
 
 				//std::cout << " t2:" << upZoid << " from " << t0+halfTime << " to " << t1 <<std::endl;
-				recursive_stencil_aux<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime , t1);
+				recursive_stencil_multiple<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime , t1);
 			}
 		}
 	}
@@ -278,7 +302,7 @@ namespace detail {
 			// notice that the original piramid has perfect vertical sides
 			auto z = data.getGlobalHyperspace();
 
-			(detail::recursive_stencil_aux<DataStorage, Kernel, Kernel::dimensions-1>)(data, k, z, 0, t);
+			(detail::recursive_stencil_multiple<DataStorage, Kernel, Kernel::dimensions-1>)(data, k, z, 0, t);
 
 		});
 	}

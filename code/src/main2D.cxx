@@ -6,7 +6,8 @@
 #include "kernel.h"
 #include "kernels_2D.h"
 #include "bufferSet.h"
-#include "rec_stencil_inverted_dims.h"
+//#include "rec_stencil_inverted_dims.h"
+#include "rec_stencil_multiple_splits.h"
 
 #include "timer.h" 
 
@@ -23,7 +24,7 @@ typedef BufferSet<PixelType, 2> ImageSpace;
 bool REC = false, IT = false, INV = false, ALL = false, VALIDATE=true, VISUALIZE=false;
 
 	int timeSteps = 10;
-	int size = 10;
+	size_t size = 10;
 
 
 void help(){

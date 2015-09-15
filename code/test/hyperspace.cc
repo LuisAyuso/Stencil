@@ -53,22 +53,25 @@ TEST(Hyperspace, Split1D){
 
 		EXPECT_EQ(n.size(), 3);
 
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 }
 
 TEST(Hyperspace, Split_1D_W){
-		Hyperspace<1> h (5, 10, -1, 1);
+
+		int level = 15;
+
+		Hyperspace<1> h (5, 10, -1, 1, level);
 
 		auto n = h.split(7);
 		
 		EXPECT_EQ(n.size(), 3);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 
-		EXPECT_EQ(Hyperspace<1>( 5,10, 1,-1) ,n[0]);
-		EXPECT_EQ(Hyperspace<1>( 5, 5,-1, 1) ,n[1]);
-		EXPECT_EQ(Hyperspace<1>(10,10,-1, 1) ,n[2]);
+		EXPECT_EQ(Hyperspace<1>( 5,10, 1,-1, level) ,n[0]);
+		EXPECT_EQ(Hyperspace<1>( 5, 5,-1, 1, level+1) ,n[1]);
+		EXPECT_EQ(Hyperspace<1>(10,10,-1, 1, level+1) ,n[2]);
 }
 
 
@@ -83,8 +86,8 @@ TEST(Hyperspace, Split2D1){
 		auto n = h.split(5);
 		EXPECT_EQ(n.size(), 3);
 
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 }
 
 TEST(Hyperspace, Split2D2){
@@ -96,8 +99,8 @@ TEST(Hyperspace, Split2D2){
 
 		auto n = h.split(5,5);
 		EXPECT_EQ(n.size(), 9);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 }
 
 TEST(Hyperspace, Split2D2_2){
@@ -108,8 +111,8 @@ TEST(Hyperspace, Split2D2_2){
 		auto n = h.split(5,5);
 
 		EXPECT_EQ(n.size(), 9);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 }
 
 TEST(Hyperspace, Split_Edge){
@@ -120,8 +123,8 @@ TEST(Hyperspace, Split_Edge){
 		auto n = h.split(5,5);
 
 		EXPECT_EQ(n.size(), 1);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 }
 
 TEST(Hyperspace, Split_2D_problem){
@@ -132,8 +135,8 @@ TEST(Hyperspace, Split_2D_problem){
 		auto n = h.split(16,3);
 
 		EXPECT_EQ(n.size(), 3);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 }
 
 
@@ -146,8 +149,8 @@ TEST(Hyperspace, Split3D3){
 
 		auto n = h.split(5,5,5);
 		EXPECT_EQ(n.size(), 27);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 }
 
 TEST(Hyperspace, Split3D1){
@@ -158,95 +161,103 @@ TEST(Hyperspace, Split3D1){
 
 		auto n = h.split(0,5,0);
 		EXPECT_EQ(n.size(), 3);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 }
 
 TEST(Hyperspace, Split_1D_Slopes){
-		Hyperspace<1> h (0, 10, 0, 0);
+
+		int level = 32;
+		Hyperspace<1> h (0, 10, 0, 0, level);
 
 		auto n = h.split_slopes(CutWithSlopes{5,1,-1});
 		
 		EXPECT_EQ(n.size(), 3);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 
-		EXPECT_EQ(n[0], Hyperspace<1>(0,5,0,-1));
-		EXPECT_EQ(n[1], Hyperspace<1>(5,10,1,0));
-		EXPECT_EQ(n[2], Hyperspace<1>(5,5,-1,1));
+		EXPECT_EQ(n[0], Hyperspace<1>(0,5,0,-1, level));
+		EXPECT_EQ(n[1], Hyperspace<1>(5,10,1,0, level));
+		EXPECT_EQ(n[2], Hyperspace<1>(5,5,-1,1, level+1));
 
 }
 
 TEST(Hyperspace, Split_1D_W_Slopes){
-		Hyperspace<1> h (5, 10, -1, 1);
+		int level = 56;
+		Hyperspace<1> h (5, 10, -1, 1, level);
 
 		auto n = h.split_slopes(CutWithSlopes{7,1,-1});
 		
 		EXPECT_EQ(n.size(), 3);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+	//	for (const auto& e: n)
+	//		std::cout << e << std::endl;
 
-		EXPECT_EQ(Hyperspace<1>(5,10,1,-1) ,n[0]);
-		EXPECT_EQ(Hyperspace<1>(5,5,-1,1)  ,n[1]);
-		EXPECT_EQ(Hyperspace<1>(10,10,-1,1),n[2]);
+		EXPECT_EQ(Hyperspace<1>( 5,10, 1,-1, level) ,n[0]);
+		EXPECT_EQ(Hyperspace<1>( 5, 5,-1, 1, level+1) ,n[1]);
+		EXPECT_EQ(Hyperspace<1>(10,10,-1, 1, level+1) ,n[2]);
 }
 
 TEST(Hyperspace, Split_2D_Slopes){
+		int level = 4;
 		Hyperspace<2> h (0, 10, 0, 0,
-						 0, 10, 0, 0);
+						 0, 10, 0, 0,
+						 level);
 
 		auto n = h.split_slopes(CutWithSlopes{5,1,-1});
 		
 		EXPECT_EQ(n.size(), 3);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+//		for (const auto& e: n)
+//			std::cout << e << std::endl;
 
-		EXPECT_EQ(n[0], Hyperspace<2>(0,5,0,-1, 0, 10, 0, 0));
-		EXPECT_EQ(n[1], Hyperspace<2>(5,10,1,0, 0, 10, 0, 0));
-		EXPECT_EQ(n[2], Hyperspace<2>(5,5,-1,1, 0, 10, 0, 0));
+		EXPECT_EQ(n[0], Hyperspace<2>(0,5,0,-1, 0, 10, 0, 0, level));
+		EXPECT_EQ(n[1], Hyperspace<2>(5,10,1,0, 0, 10, 0, 0, level));
+		EXPECT_EQ(n[2], Hyperspace<2>(5,5,-1,1, 0, 10, 0, 0, level+1));
 }
 
 
 TEST(Hyperspace, Split_2D_M_slopes){
+		int level = 83;
 		Hyperspace<2> h (0, 512, 0, 0,
-						 0, 512, 0, 0);
+						 0, 512, 0, 0,
+						 level);
 
 		auto n = h.split_slopes(CutWithSlopes{256,1,-1}, CutWithSlopes{256,1,-1});
 		
 		EXPECT_EQ(n.size(), 9);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+//		for (const auto& e: n)
+//			std::cout << e << std::endl;
 
-		EXPECT_EQ(n[0], Hyperspace<2>(0,256,0,-1, 0,256, 0,-1));
-		EXPECT_EQ(n[1], Hyperspace<2>(256,512,1,0,0,256,0,-1) );
-		EXPECT_EQ(n[2], Hyperspace<2>(256,256,-1,1,0,256,0,-1) );
-		EXPECT_EQ(n[3], Hyperspace<2>(0,256,0,-1,256,512,1,0) );
-		EXPECT_EQ(n[4], Hyperspace<2>(256,512,1,0,256,512,1,0) );
-		EXPECT_EQ(n[5], Hyperspace<2>(256,256,-1,1,256,512,1,0) );
-		EXPECT_EQ(n[6], Hyperspace<2>(0,256,0,-1,256,256,-1,1) );
-		EXPECT_EQ(n[7], Hyperspace<2>(256,512,1,0,256,256,-1,1) );
-		EXPECT_EQ(n[8], Hyperspace<2>(256,256,-1,1,256,256,-1,1));
+		EXPECT_EQ( n[0], Hyperspace<2>(  0, 256, 0,-1,  0,256, 0,-1, level) );
+		EXPECT_EQ( n[1], Hyperspace<2>(256, 512, 1, 0,  0,256, 0,-1, level) );
+		EXPECT_EQ( n[2], Hyperspace<2>(256, 256,-1, 1,  0,256, 0,-1, level+1));
+		EXPECT_EQ( n[3], Hyperspace<2>(  0, 256, 0,-1,256,512, 1, 0, level) );
+		EXPECT_EQ( n[4], Hyperspace<2>(256, 512, 1, 0,256,512, 1, 0, level) );
+		EXPECT_EQ( n[5], Hyperspace<2>(256, 256,-1, 1,256,512, 1, 0, level+1));
+		EXPECT_EQ( n[6], Hyperspace<2>(  0, 256, 0,-1,256,256,-1, 1, level+1) );
+		EXPECT_EQ( n[7], Hyperspace<2>(256, 512, 1, 0,256,256,-1, 1, level+1) );
+		EXPECT_EQ( n[8], Hyperspace<2>(256, 256,-1, 1,256,256,-1, 1, level+2));
 }
 
 TEST(Hyperspace, Split_2D_M_slopes_2){
+		int level = 32;
 		Hyperspace<2> h (0, 512, 1, -1,
-						 0, 512, 1, -1);
+						 0, 512, 1, -1, level);
 
 		auto n = h.split_slopes(CutWithSlopes{256,1,-1}, CutWithSlopes{256,1,-1});
 		
 		EXPECT_EQ(n.size(), 9);
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+//		for (const auto& e: n)
+//			std::cout << e << std::endl;
 
-		EXPECT_EQ(n[0], Hyperspace<2>(0  ,256, 1,-1,   0, 256, 1,-1) );
-		EXPECT_EQ(n[1], Hyperspace<2>(256,512, 1,-1,   0, 256, 1,-1) );
-		EXPECT_EQ(n[2], Hyperspace<2>(256,256,-1, 1,   0, 256, 1,-1) );
-		EXPECT_EQ(n[3], Hyperspace<2>(0  ,256, 1,-1, 256, 512, 1,-1) );
-		EXPECT_EQ(n[4], Hyperspace<2>(256,512, 1,-1, 256, 512, 1,-1) );
-		EXPECT_EQ(n[5], Hyperspace<2>(256,256,-1, 1, 256, 512, 1,-1) );
-		EXPECT_EQ(n[6], Hyperspace<2>(0  ,256, 1,-1, 256, 256,-1, 1) );
-		EXPECT_EQ(n[7], Hyperspace<2>(256,512, 1,-1, 256, 256,-1, 1) );
-		EXPECT_EQ(n[8], Hyperspace<2>(256,256,-1, 1, 256, 256,-1, 1) );
+		EXPECT_EQ(n[0], Hyperspace<2>(0  ,256, 1,-1,   0, 256, 1,-1, level) );
+		EXPECT_EQ(n[1], Hyperspace<2>(256,512, 1,-1,   0, 256, 1,-1, level) );
+		EXPECT_EQ(n[2], Hyperspace<2>(256,256,-1, 1,   0, 256, 1,-1, level+1) );
+		EXPECT_EQ(n[3], Hyperspace<2>(0  ,256, 1,-1, 256, 512, 1,-1, level) );
+		EXPECT_EQ(n[4], Hyperspace<2>(256,512, 1,-1, 256, 512, 1,-1, level) );
+		EXPECT_EQ(n[5], Hyperspace<2>(256,256,-1, 1, 256, 512, 1,-1, level+1) );
+		EXPECT_EQ(n[6], Hyperspace<2>(0  ,256, 1,-1, 256, 256,-1, 1, level+1) );
+		EXPECT_EQ(n[7], Hyperspace<2>(256,512, 1,-1, 256, 256,-1, 1, level+1) );
+		EXPECT_EQ(n[8], Hyperspace<2>(256,256,-1, 1, 256, 256,-1, 1, level+2) );
 }
 
 
@@ -286,35 +297,36 @@ std::vector<Hyperspace<2>> recCut( const Hyperspace<2>& hyp, bool stop = false, 
 
 TEST(Hyperspace, Split_2D_2){
 
+	int level = 20;
 	Hyperspace<2> h (0, 2, 0, 0,
-					 0, 2, 0, 0);
+					 0, 2, 0, 0, level);
 
 	auto n = recCut<0>(h);
 
-	for (const auto& e: n)
-		std::cout << e << std::endl;
+//	for (const auto& e: n)
+//		std::cout << e << std::endl;
 
 
 								//     |\        |\  
-	EXPECT_EQ( n[0], Hyperspace<2> (0,1, 0,-1,  0,1, 0,-1));
+	EXPECT_EQ( n[0], Hyperspace<2> (0,1, 0,-1,  0,1, 0,-1, level));
 								//     |\        /|  
-	EXPECT_EQ( n[1], Hyperspace<2> (0,1, 0,-1,  1,2, 1, 0));
+	EXPECT_EQ( n[1], Hyperspace<2> (0,1, 0,-1,  1,2, 1, 0, level));
 								//     |\        \/   
-	EXPECT_EQ( n[2], Hyperspace<2> (0,1, 0,-1,  1,1,-1, 1));
+	EXPECT_EQ( n[2], Hyperspace<2> (0,1, 0,-1,  1,1,-1, 1, level+1));
 
 								//     /|        |\    
-	EXPECT_EQ( n[3], Hyperspace<2> (1,2, 1, 0,  0,1, 0,-1));
+	EXPECT_EQ( n[3], Hyperspace<2> (1,2, 1, 0,  0,1, 0,-1, level));
 								//     /|        /|    
-	EXPECT_EQ( n[4], Hyperspace<2> (1,2, 1, 0,  1,2, 1, 0));
+	EXPECT_EQ( n[4], Hyperspace<2> (1,2, 1, 0,  1,2, 1, 0, level));
 								//     /|        \/    
-	EXPECT_EQ( n[5], Hyperspace<2> (1,2, 1, 0,  1,1,-1, 1));
+	EXPECT_EQ( n[5], Hyperspace<2> (1,2, 1, 0,  1,1,-1, 1, level+1));
 
 								//     \/	     |\ 
-	EXPECT_EQ( n[6], Hyperspace<2> (1,1,-1, 1,  0,1, 0,-1));
+	EXPECT_EQ( n[6], Hyperspace<2> (1,1,-1, 1,  0,1, 0,-1, level+1));
 								//     \/	     /| 
-	EXPECT_EQ( n[7], Hyperspace<2> (1,1,-1, 1,  1,2, 1, 0));
+	EXPECT_EQ( n[7], Hyperspace<2> (1,1,-1, 1,  1,2, 1, 0, level+1));
 								//     \/	     \/
-	EXPECT_EQ( n[8], Hyperspace<2> (1,1,-1, 1,  1,1,-1, 1));
+	EXPECT_EQ( n[8], Hyperspace<2> (1,1,-1, 1,  1,1,-1, 1, level+2));
 
 
 	std::vector<Hyperspace<2>> level0;
@@ -322,9 +334,9 @@ TEST(Hyperspace, Split_2D_2){
 	std::vector<Hyperspace<2>> level2;
 
 	for (const auto& i: n){
-		if (i.getStep() == 0) level0.push_back(i);
-		if (i.getStep() == 1) level1.push_back(i);
-		if (i.getStep() == 2) level2.push_back(i);
+		if (i.getStep() == level) level0.push_back(i);
+		if (i.getStep() == level+1) level1.push_back(i);
+		if (i.getStep() == level+2) level2.push_back(i);
 	}
 
 	EXPECT_EQ(level0.size() + level1.size() + level2.size(), n.size());
@@ -362,8 +374,8 @@ TEST(Hyperspace, Split_2D_3){
 
 	EXPECT_EQ(level0.size() + level1.size() + level2.size(), n.size());
 
-	for (const auto& e: level0)
-		std::cout << e << std::endl;
+//	for (const auto& e: level0)
+//		std::cout << e << std::endl;
 
 	EXPECT_EQ(level0.size(), 9);
 	EXPECT_EQ(level1.size(), 12);
@@ -377,8 +389,8 @@ TEST(Hyperspace, Split_2D_8){
 
 	auto n = recCut<0>(h);
 
-	for (const auto& e: n)
-		std::cout << e << std::endl;
+//	for (const auto& e: n)
+//		std::cout << e << std::endl;
 
 	for (const auto& i: n){
 		int sum = 0;
@@ -407,8 +419,8 @@ TEST(Hyperspace, Split_2D_16){
 
 	auto n = recCut<0>(h);
 
-	for (const auto& e: n)
-		std::cout << e << std::endl;
+//	for (const auto& e: n)
+//		std::cout << e << std::endl;
 
 	for (const auto& i: n){
 		int sum = 0;
@@ -421,24 +433,26 @@ TEST(Hyperspace, Split_2D_16){
 }
 
 TEST(Hyperspace, Split_2D_With_array){
+
+		int level = 64;
 		Hyperspace<2> h (0, 512, 1, -1,
-						 0, 512, 1, -1);
+						 0, 512, 1, -1,
+						 level);
 
 		std::array<CutWithSlopes, 3> cuts = { CutWithSlopes{128,1,-1}, CutWithSlopes{256,1,-1}, CutWithSlopes{384, 1, -1} };
 		auto n = h.split_slopes_same_dim<0>(cuts);
 		
 		EXPECT_EQ(n.size(), 7)<< "nop";
-		for (const auto& e: n)
-			std::cout << e << std::endl;
+//		for (const auto& e: n)
+//			std::cout << e << std::endl;
 
-		EXPECT_EQ(n[0], Hyperspace<2>(  0,128, 1,-1,0,512,1,-1) );
-		EXPECT_EQ(n[1], Hyperspace<2>(128,128, -1,1,0,512,1,-1) );
-		EXPECT_EQ(n[2], Hyperspace<2>(128,256, 1,-1,0,512,1,-1) );
-		EXPECT_EQ(n[3], Hyperspace<2>(256,256, -1,1,0,512,1,-1) );
-		EXPECT_EQ(n[4], Hyperspace<2>(256,384, 1,-1,0,512,1,-1) );
-		EXPECT_EQ(n[5], Hyperspace<2>(384,384, -1,1,0,512,1,-1) );
-		EXPECT_EQ(n[6], Hyperspace<2>(384,512, 1,-1,0,512,1,-1) );
+		EXPECT_EQ(n[0], Hyperspace<2>(  0,128, 1,-1,0,512,1,-1, level) );
+		EXPECT_EQ(n[1], Hyperspace<2>(128,128, -1,1,0,512,1,-1, level+1) );
+		EXPECT_EQ(n[2], Hyperspace<2>(128,256, 1,-1,0,512,1,-1, level) );
+		EXPECT_EQ(n[3], Hyperspace<2>(256,256, -1,1,0,512,1,-1, level+1) );
+		EXPECT_EQ(n[4], Hyperspace<2>(256,384, 1,-1,0,512,1,-1, level) );
+		EXPECT_EQ(n[5], Hyperspace<2>(384,384, -1,1,0,512,1,-1, level+1) );
+		EXPECT_EQ(n[6], Hyperspace<2>(384,512, 1,-1,0,512,1,-1, level) );
 }
-
 
 

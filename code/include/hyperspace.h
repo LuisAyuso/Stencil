@@ -358,7 +358,8 @@ namespace stencil{
 				}
 			}
 
-			return true;
+		//	return true;
+			return o.step == step;
 		}
 
 

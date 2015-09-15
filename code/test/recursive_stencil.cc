@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "kernel.h"
-#include "rec_stencil_inverted_dims.h"
-//#include "rec_stencil_multiple_splits.h"
+//#include "rec_stencil_inverted_dims.h"
+#include "rec_stencil_multiple_splits.h"
 #include "kernels_1D.h"
 #include "kernels_2D.h"
 #include "kernels_3D.h"
