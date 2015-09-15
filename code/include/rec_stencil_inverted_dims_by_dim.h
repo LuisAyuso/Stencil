@@ -9,6 +9,7 @@
 
 #include "dispatch.h"
 
+#include "tools/instrument.h"
 
 #ifndef CUT 
 #  define CUT 10
@@ -25,6 +26,8 @@ namespace detail {
 			inline typename std::enable_if< is_eq<Kernel::dimensions, N>::value, void>::type
 
 		FOR_DIMENSION(1) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+			
+			BEGIN_INSTRUMENT(z);
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -37,9 +40,13 @@ namespace detail {
 				ia += z.da(0);
 				ib += z.db(0);
 			}
+
+			END_INSTUMENT;
 		}
 
 		FOR_DIMENSION(2) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+			BEGIN_INSTRUMENT(z);
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -58,9 +65,14 @@ namespace detail {
 				ja += z.da(1);
 				jb += z.db(1);
 			}
+
+			END_INSTUMENT;
 		}
 
 		FOR_DIMENSION(3) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+			BEGIN_INSTRUMENT(z);
+		//	std::cout << " base case: " << z << std::endl;
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -85,9 +97,13 @@ namespace detail {
 				ka += z.da(2);
 				kb += z.db(2);
 			}
+
+			END_INSTUMENT;
 		}
 
 		FOR_DIMENSION(4) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+			BEGIN_INSTRUMENT(z);
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -119,6 +135,8 @@ namespace detail {
 				wa += z.da(3);
 				wb += z.db(3);
 			}
+
+			END_INSTUMENT;
 		}
 
 
@@ -146,9 +164,31 @@ namespace detail {
 	inline void recursive_stencil_inverted(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1);
 
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void next_dimension_or_base_case (DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1){
-		if (Dim == 0) base_case <DataStorage, Kernel>  (data, k, z, t0, t1);
-		else recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>(data, k, z, t0, t1);
+	inline void next_dimension_or_time_cut (DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1){
+		if (Dim == 0) {
+
+				const int halfTime = (t1-t0)/2;
+				assert(halfTime >= 1);
+
+				const auto nextDim = next_dim<Dim,Kernel::dimensions>::value;
+
+				//std::cout << " t1: " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;
+				recursive_stencil_inverted<DataStorage, Kernel, nextDim>(data, k, z, t0, t0+halfTime);
+
+				// We must update all the dimensions as we move in time.... 
+				auto upZoid = z;
+				for (auto d = 0; d < z.dimensions; ++d){
+					upZoid.a(d) = z.a(d) + z.da(d)*halfTime;
+					upZoid.b(d) = z.b(d) + z.db(d)*halfTime;
+				}
+
+				//std::cout << " t2:" << upZoid << " from " << t0+halfTime << " to " << t1 <<std::endl;
+				recursive_stencil_inverted<DataStorage, Kernel, nextDim>(data, k, upZoid, t0+halfTime , t1);
+		
+		}
+		else {
+			recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>(data, k, z, t0, t1);
+		}
 	}
 
 
@@ -160,7 +200,7 @@ namespace detail {
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 		static_assert(CUT >= 3, "cut off must be greater than 3");
 
-		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << std::endl;
+		//std::cout << "zoid: " << z <<  " from  " << t0 << " to " << t1 << " in dim: " << Dim << std::endl;
 
 		const auto deltaT = (int)t1-t0;
 		assert(t1 >= t0);
@@ -169,7 +209,7 @@ namespace detail {
 		// BASE CASE
 		if (deltaT <= CUT){
 	
-			next_dimension_or_base_case <DataStorage, Kernel, Dim>  (data, k, z, t0, t1);
+			base_case <DataStorage, Kernel>  (data, k, z, t0, t1);
 		}
 		
 		else{
@@ -218,21 +258,7 @@ namespace detail {
 			else { // if (deltaT > 1 && deltaX > 0  && deltaY > 0){
 				//std::cout << "time cut: " << z << " from " << t0 << " to " << t1 <<std::endl;
 
-				const int halfTime = deltaT/2;
-				assert(halfTime >= 1);
-
-				//std::cout << " t1: " << z << " from " << t0 << " to " << t0+halfTime <<std::endl;
-				recursive_stencil_inverted<DataStorage, Kernel, Dim>(data, k, z, t0, t0+halfTime);
-
-				// We must update all the dimensions as we move in time.... 
-				auto upZoid = z;
-				for (auto d = 0; d < z.dimensions; ++d){
-					upZoid.a(d) = z.a(d) + z.da(d)*halfTime;
-					upZoid.b(d) = z.b(d) + z.db(d)*halfTime;
-				}
-
-				//std::cout << " t2:" << upZoid << " from " << t0+halfTime << " to " << t1 <<std::endl;
-				recursive_stencil_inverted<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime , t1);
+				next_dimension_or_time_cut<DataStorage, Kernel, Dim> (data, k,  z,  t0,  t1);
 			}
 		}
 	}

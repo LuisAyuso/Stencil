@@ -84,7 +84,7 @@
 	
     #define SPAWN(taskName, f, ...) \
         auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--; }; \
-		_Pragma( "omp task untied if (current_threads  < max_threads)") \
+		_Pragma( "omp task untied ") \
 		MAKE_UNIQUE(wrap)(); \
 		PROMISE taskName;
 

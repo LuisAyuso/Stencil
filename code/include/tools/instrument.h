@@ -4,6 +4,8 @@
 
 #include <sstream>
 
+#ifdef INSTRUMENT
+
 namespace instrument{
 
 	template <unsigned Dims>
@@ -19,3 +21,18 @@ namespace instrument{
 	}
 
 }
+	#define BEGIN_INSTRUMENT(Z) \
+			auto swt = instrument::instrument_base_case(Z);
+
+	#define END_INSTUMENT \
+			instrument::instrument_end(swt);
+
+#else
+
+	#define BEGIN_INSTRUMENT(Z) \
+		;
+
+	#define END_INSTUMENT \
+		;
+
+#endif

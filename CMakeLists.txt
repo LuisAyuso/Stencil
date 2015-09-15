@@ -46,6 +46,7 @@ endif()
 
 if (INSTRUMENT)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINSTRUMENT=1")
+	message(STATUS " INSTRUMENT TRACES")
 endif()
 
 # -------------------------------------------------------------------

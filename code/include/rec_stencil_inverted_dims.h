@@ -27,6 +27,8 @@ namespace detail {
 
 		FOR_DIMENSION(1) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
+			BEGIN_INSTRUMENT(z);
+
 			int ia = z.a(0);
 			int ib = z.b(0);
 
@@ -38,9 +40,13 @@ namespace detail {
 				ia += z.da(0);
 				ib += z.db(0);
 			}
+
+			END_INSTUMENT;
 		}
 
 		FOR_DIMENSION(2) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+			BEGIN_INSTRUMENT(z);
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -59,9 +65,13 @@ namespace detail {
 				ja += z.da(1);
 				jb += z.db(1);
 			}
+
+			END_INSTUMENT;
 		}
 
 		FOR_DIMENSION(3) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+			BEGIN_INSTRUMENT(z);
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -86,9 +96,13 @@ namespace detail {
 				ka += z.da(2);
 				kb += z.db(2);
 			}
+
+			END_INSTUMENT;
 		}
 
 		FOR_DIMENSION(4) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+
+			BEGIN_INSTRUMENT(z);
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -120,6 +134,8 @@ namespace detail {
 				wa += z.da(3);
 				wb += z.db(3);
 			}
+
+			END_INSTUMENT;
 		}
 
 
