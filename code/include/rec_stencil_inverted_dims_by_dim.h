@@ -10,7 +10,6 @@
 #include "dispatch.h"
 
 
-
 #ifndef CUT 
 #  define CUT 10
 #endif 
@@ -140,8 +139,21 @@ namespace detail {
 	struct next_dim<0, 1>{
 			static const unsigned value = 0;
 	};
-	
+
+// ~~~~~~~~~~~~~~~~ base case routine, if dim == 0 compute, if not, get to next dimension ~~~~~~~~~~~~~~~~~~~~~~~~
+
+	template <typename DataStorage, typename Kernel, int Dim>
+	inline void recursive_stencil_inverted(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1);
+
+	template <typename DataStorage, typename Kernel, int Dim>
+	inline void next_dimension_or_base_case (DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1){
+		if (Dim == 0) base_case <DataStorage, Kernel>  (data, k, z, t0, t1);
+		else recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>(data, k, z, t0, t1);
+	}
+
+
 // ~~~~~~~~~~~~~~~~ recursive  routine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
 	template <typename DataStorage, typename Kernel, int Dim>
 	inline void recursive_stencil_inverted(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1){
 
@@ -157,7 +169,7 @@ namespace detail {
 		// BASE CASE
 		if (deltaT <= CUT){
 	
-			base_case <DataStorage, Kernel>  (data, k, z, t0, t1);
+			next_dimension_or_base_case <DataStorage, Kernel, Dim>  (data, k, z, t0, t1);
 		}
 		
 		else{
@@ -184,10 +196,10 @@ namespace detail {
 				const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
 				assert(subSpaces.size() == 3);
 
-				SPAWN ( left, (recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, subSpaces[0], t0, t1);
-				recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>( data, k, subSpaces[1], t0, t1);
+				SPAWN ( left, (recursive_stencil_inverted<DataStorage, Kernel, Dim>), data, k, subSpaces[0], t0, t1);
+				recursive_stencil_inverted<DataStorage, Kernel, Dim>( data, k, subSpaces[1], t0, t1);
 				SYNC(left);
-				recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value> (data, k, subSpaces[2], t0, t1);
+				recursive_stencil_inverted<DataStorage, Kernel, Dim> (data, k, subSpaces[2], t0, t1);
 			}
 			// Cut in W
 			else if (deltaTop >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){ 
@@ -196,10 +208,10 @@ namespace detail {
 				const auto& subSpaces  = Target_Hyperspace::template split_W<Dim> (z, slopeDim.first, slopeDim.second);
 				assert(subSpaces.size() == 3);
 
-				recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value> (data, k, subSpaces[0], t0, t1);
+				recursive_stencil_inverted<DataStorage, Kernel, Dim> (data, k, subSpaces[0], t0, t1);
 
-				SPAWN ( left, (recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, subSpaces[1], t0, t1);
-				recursive_stencil_inverted<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>( data, k, subSpaces[2], t0, t1);
+				SPAWN ( left, (recursive_stencil_inverted<DataStorage, Kernel, Dim>), data, k, subSpaces[1], t0, t1);
+				recursive_stencil_inverted<DataStorage, Kernel, Dim>( data, k, subSpaces[2], t0, t1);
 				SYNC(left);
 			}
 			// Time cut

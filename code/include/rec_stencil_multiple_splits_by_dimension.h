@@ -18,7 +18,7 @@
 #endif 
 
 #ifndef SPATIAL_CUTS 
-#  define SPATIAL_CUTS 2
+#  define SPATIAL_CUTS 8
 #endif 
 
 
@@ -147,6 +147,16 @@ namespace detail {
 			static const unsigned value = 0;
 	};
 
+// ~~~~~~~~~~~~~~~~ base case routine, if dim == 0 compute, if not, get to next dimension ~~~~~~~~~~~~~~~~~~~~~~~~
+
+	template <typename DataStorage, typename Kernel, int Dim>
+	inline void recursive_stencil_multiple(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1);
+
+	template <typename DataStorage, typename Kernel, int Dim>
+	inline void next_dimension_or_base_case (DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, const int t0, const int t1){
+		if (Dim == 0) base_case <DataStorage, Kernel>  (data, k, z, t0, t1);
+		else recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>(data, k, z, t0, t1);
+	}
 
 // ~~~~~~~~~~~~~~~~ multiple splits routine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
@@ -165,7 +175,7 @@ namespace detail {
 		// BASE CASE
 		if (deltaT <= TIME_CUTOFF){
 	
-			base_case <DataStorage, Kernel>  (data, k, z, t0, t1);
+			next_dimension_or_base_case <DataStorage, Kernel, Dim>  (data, k, z, t0, t1);
 		}
 		else{
 
@@ -208,7 +218,7 @@ namespace detail {
 				i = 0;
 				for (const auto& x : subHypSpaces){
 					if (x.getStep() == basestep){
-						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
+						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, Dim>), data, k, x, t0, t1);
 						std::swap (futures[i++], future);
 					}
 				}
@@ -218,7 +228,7 @@ namespace detail {
 				i = 0;
 				for (const auto& x : subHypSpaces){
 					if (x.getStep() == basestep+1){
-						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
+						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, Dim>), data, k, x, t0, t1);
 						std::swap (futures[i++], future);
 					}
 				}
@@ -254,7 +264,7 @@ namespace detail {
 				i = 0;
 				for (const auto& x : subHypSpaces){
 					if (x.getStep() == basestep){
-						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
+						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, Dim>), data, k, x, t0, t1);
 						std::swap (futures[i++], future);
 					}
 				}
@@ -264,7 +274,7 @@ namespace detail {
 				i = 0;
 				for (const auto& x : subHypSpaces){
 					if (x.getStep() == basestep+1){
-						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, next_dim<Dim,Kernel::dimensions>::value>), data, k, x, t0, t1);
+						SPAWN ( future,  (recursive_stencil_multiple<DataStorage, Kernel, Dim>), data, k, x, t0, t1);
 						std::swap (futures[i++], future);
 					}
 				}

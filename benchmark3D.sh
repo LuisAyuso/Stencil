@@ -28,12 +28,12 @@ echo -e $HEADER
 
 
 
-for REPETITIONS in `seq 1 10`
+for REPETITIONS in $(seq 1 10)
 do
 
-	for SIZE in 100 150 200
+	for SIZE in $(seq 100 50 800)
 	do
-		for CORES in 64 32 16 8 4 2 1 
+		for CORES in 64 32 24 16 8 4 2 1 
 		do
 			CORES_TO_USE="0-$(($CORES-1))"
 
@@ -64,18 +64,18 @@ do
 				done
 				echo -e $LINE
 
-			## ###################### RUN ITERATIVE #######################
+		#	## ###################### RUN ITERATIVE #######################
 
-				TO_RUN="$PERF_CMD -x \";\" $SETUP it "
-				echoerr $TO_RUN
-				$TO_RUN > out 2> perf-stat
-				TIME=`grep "ms" out | cut -f 2 -d " " | cut -f 1 -d "m"`
-				LINE=$KIND";it;$SIZE;$TIMESTEPS;\t$CORES;\t$TIME"
-				for STAT_LINE in `sed  's/\"//g' perf-stat | cut -f 1 -d ";"`
-				do
-					 LINE=$LINE";\t"$STAT_LINE
-				done
-				echo -e $LINE
+		#		TO_RUN="$PERF_CMD -x \";\" $SETUP it "
+		#		echoerr $TO_RUN
+		#		$TO_RUN > out 2> perf-stat
+		#		TIME=`grep "ms" out | cut -f 2 -d " " | cut -f 1 -d "m"`
+		#		LINE=$KIND";it;$SIZE;$TIMESTEPS;\t$CORES;\t$TIME"
+		#		for STAT_LINE in `sed  's/\"//g' perf-stat | cut -f 1 -d ";"`
+		#		do
+		#			 LINE=$LINE";\t"$STAT_LINE
+		#		done
+		#		echo -e $LINE
 
 			## ###################### RUN INVERTED #######################
 

@@ -41,6 +41,10 @@
 // ~~~~~~~~~~~~~~~~~~~~~ SEQUENTIAL ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef SEQUENTIAL
 
+	namespace {
+		const static auto MAX_THREADS = 1;
+	}
+
 	#define PARALLEL_CTX(STMT) \
 		STMT
 
@@ -68,7 +72,8 @@
 	typedef int PROMISE;
 
 	namespace {
-		static auto max_threads = 16; // omp_get_thread_limit() * THREAD_CUTOFF;
+		const static auto MAX_THREADS = omp_get_thread_limit();
+		static auto max_threads = MAX_THREADS * THREAD_CUTOFF;
 		std::atomic_long current_threads (0);
 	}
     
@@ -108,7 +113,8 @@
 	#include <cilk/cilk_api.h>
 
 	namespace {
-		static auto max_threads = __cilkrts_get_nworkers() * THREAD_CUTOFF;
+		const static auto MAX_THREADS = __cilkrts_get_nworkers();
+		static auto max_threads = MAX_THREADS * THREAD_CUTOFF;
 		std::atomic_long current_threads (0);
 	}
 
@@ -144,7 +150,8 @@
 
 	namespace {
 
-		static auto max_threads = std::thread::hardware_concurrency() * THREAD_CUTOFF;
+		const static auto MAX_THREADS = std::thread::hardware_concurrency();
+		static auto max_threads = MAX_THREADS * THREAD_CUTOFF;
 		std::atomic_long current_threads (0);
 
 	//	class Thread_Pool{
@@ -361,7 +368,8 @@ namespace {
 
 	#include <thread>
 	namespace {
-		static auto max_threads = std::thread::hardware_concurrency() * THREAD_CUTOFF;
+		const static auto MAX_THREADS = std::thread::hardware_concurrency();
+		static auto max_threads =  MAX_THREADS * THREAD_CUTOFF;
 		std::atomic_long current_threads (0);
 	}
 

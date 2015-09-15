@@ -7,8 +7,10 @@
 #include "kernel.h"
 #include "kernels_3D.h"
 #include "bufferSet.h"
+//#include "rec_stencil_inverted_dims_by_dim.h"
 //#include "rec_stencil_inverted_dims.h"
-#include "rec_stencil_multiple_splits.h"
+//#include "rec_stencil_multiple_splits.h"
+#include "rec_stencil_multiple_splits_by_dimension.h"
 
 #include "timer.h" 
 

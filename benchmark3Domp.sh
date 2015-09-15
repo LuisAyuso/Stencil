@@ -11,8 +11,7 @@ then
 fi
 
 
-CMD="./Stencil2D-omp"
-
+CMD="./Stencil3D-omp"
 
 echo "alg;cores;timesteps;size;exectime"
 
@@ -32,7 +31,7 @@ do
 				echoerr "$CORES cores:  $CMD -t $TIMESTEPS -s $SIZE"
 				taskset -c $CORES_TO_USE $CMD -t $TIMESTEPS -s $SIZE > output
 
-				echo "iterative;$CORES;$TIMESTEPS;$SIZE;$(grep iterative output | cut -d":"  -f 2 | sed 's/ms//g')"
+			#	echo "iterative;$CORES;$TIMESTEPS;$SIZE;$(grep iterative output | cut -d":"  -f 2 | sed 's/ms//g')"
 				echo "recursive;$CORES;$TIMESTEPS;$SIZE;$(grep recursive output | cut -d":"  -f 2 | sed 's/ms//g')"
 				echo "inverted ;$CORES;$TIMESTEPS;$SIZE;$(grep inverted output | cut -d":"  -f 2 | sed 's/ms//g')"
  
