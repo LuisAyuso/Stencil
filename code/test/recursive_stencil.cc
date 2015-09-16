@@ -2,7 +2,8 @@
 
 #include "kernel.h"
 //#include "rec_stencil_inverted_dims.h"
-#include "rec_stencil_multiple_splits.h"
+//#include "rec_stencil_multiple_splits.h"
+#include "new_rec_stencil.h"
 #include "kernels_1D.h"
 #include "kernels_2D.h"
 #include "kernels_3D.h"
@@ -217,7 +218,7 @@ TEST(Stencil2D, Blur11){
 
 	for (auto i = 1; i < SIZE; i ++)
 	for (auto j = 1; j < SIZE; j ++)
-		EXPECT_EQ( getElem(buff1, i, j, 1), getElem(buff2, i, j, 1));
+		ASSERT_EQ( getElem(buff1, i, j, 1), getElem(buff2, i, j, 1));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 3D ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

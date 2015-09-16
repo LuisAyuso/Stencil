@@ -6,10 +6,13 @@
 #include "kernel.h"
 #include "kernels_2D.h"
 #include "bufferSet.h"
+
 //#include "rec_stencil_inverted_dims_by_dim.h"
 //#include "rec_stencil_inverted_dims.h"
 //#include "rec_stencil_multiple_splits.h"
-#include "rec_stencil_multiple_splits_by_dimension.h"
+//#include "rec_stencil_multiple_splits_by_dimension.h"
+
+#include "new_rec_stencil.h"
 
 #include "timer.h" 
 
@@ -126,9 +129,12 @@ int main(int argc, char *argv[]) {
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
 				P_FOR ( i, 0, getW(iteBuffer), 1, {
+
+					LOOP_INSTRUMENT(i, t);
 		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
 						kernel(iteBuffer, i, j, t);
 					}
+					END_INSTUMENT;
 				});
 			}
 		};
@@ -141,9 +147,12 @@ int main(int argc, char *argv[]) {
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
 				P_FOR ( j, 0, getH(iteBuffer), 1 , {
+
+					LOOP_INSTRUMENT(j, t);
 					for (unsigned i = 0; i < getW(iteBuffer); ++i){
 						kernel(invBuffer, i, j, t);
 					}
+					END_INSTUMENT;
 				});
 			}
 		};

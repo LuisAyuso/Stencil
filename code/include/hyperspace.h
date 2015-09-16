@@ -188,6 +188,10 @@ namespace stencil{
 		return step;
 	}
 
+	void increaseStep(){ 
+		step++;
+	}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spliting tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		typedef std::array<Hyperspace<Dimensions>,3> CutDim_exact;

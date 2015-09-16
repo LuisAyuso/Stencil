@@ -7,10 +7,13 @@
 #include "kernel.h"
 #include "kernels_1D.h"
 #include "bufferSet.h"
+
 //#include "rec_stencil_inverted_dims_by_dim.h"
 //#include "rec_stencil_inverted_dims.h"
 //#include "rec_stencil_multiple_splits.h"
-#include "rec_stencil_multiple_splits_by_dimension.h"
+//#include "rec_stencil_multiple_splits_by_dimension.h"
+
+#include "new_rec_stencil.h"
 
 #include "timer.h" 
 
@@ -99,7 +102,6 @@ int main(int argc, char *argv[]) {
 
 	ImageSpace recBuffer( {{size}}, data);
 	ImageSpace iteBuffer( {{size}}, data);
-	ImageSpace invBuffer( {{size}}, data);
 
 	std::cout << " ~~~~~~~~~~~~~ GO ~~~~~~~~~~~~~~~~~~~" <<std::endl;
 
@@ -115,45 +117,28 @@ int main(int argc, char *argv[]) {
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
-//	if (IT || ALL){
-//		auto it = [&] (){
-//			for (unsigned t = 0; t < timeSteps; ++t){
-//				P_FOR ( i, 0, getW(iteBuffer), 1, {
-//		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
-//		 				for (unsigned k = 0; k < getD(iteBuffer); ++k){
-//							kernel(iteBuffer, i, j, k, t);
-//						}
-//					}
-//				});
-//			}
-//		};
-//
-//		auto t = time_call(it);
-//		std::cout << "iterative: " << t <<"ms" << std::endl;
-//	}
-
-	if (INV || ALL){
+	if (IT || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
 				P_FOR ( i, 0, getW(iteBuffer), 1, {
-					kernel(invBuffer, i, t);
+
+					LOOP_INSTRUMENT(i, t);
+					kernel(iteBuffer, i, t);
+					END_INSTUMENT;
 				});
 			}
 		};
 
 		auto t = time_call(it);
-		std::cout << "inverted: " << t << "ms" <<std::endl;
+		std::cout << "iterative: " << t <<"ms" << std::endl;
 	}
 
 	if (ALL && VALIDATE){
-		if (recBuffer != invBuffer) std::cout << "VALIDATION FAILED" << std::endl;
-	//	else if (invBuffer != iteBuffer) std::cout << "VALIDATION FAILED" << std::endl;
-	//	else if (iteBuffer != recBuffer) std::cout << "VALIDATION FAILED" << std::endl;
+		 if (recBuffer != iteBuffer) std::cout << "VALIDATION FAILED" << std::endl;
 		else std::cout << "VALIDATION OK" << std::endl;
 	}
 
 //	std::cout << recBuffer << std::endl;
-//	std::cout << invBuffer << std::endl;
 //	std::cout << iteBuffer << std::endl;
 
 	return 0;
