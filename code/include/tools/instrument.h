@@ -47,6 +47,9 @@ namespace instrument{
 	#define BEGIN_INSTRUMENT(Z) \
 		;
 
+	#define LOOP_INSTRUMENT(X,T) \
+		;
+
 	#define END_INSTUMENT \
 		;
 

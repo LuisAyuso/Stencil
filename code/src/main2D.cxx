@@ -15,6 +15,7 @@
 #include "new_rec_stencil.h"
 
 #include "timer.h" 
+#include "tools/instrument.h" 
 
 using namespace stencil;
 
