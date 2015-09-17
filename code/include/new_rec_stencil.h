@@ -18,9 +18,6 @@
 #  define TIME_CUTOFF 10
 #endif 
 
-#ifndef SPATIAL_CUTS 
-#  define SPATIAL_CUTS 8
-#endif 
 
 
 namespace stencil{
@@ -34,7 +31,7 @@ namespace detail {
 
 		FOR_DIMENSION(1) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
-			BEGIN_INSTRUMENT(z)
+			BC_INSTRUMENT(z)
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -53,7 +50,7 @@ namespace detail {
 
 		FOR_DIMENSION(2) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
-			BEGIN_INSTRUMENT(z)
+			BC_INSTRUMENT(z)
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -77,7 +74,7 @@ namespace detail {
 
 		FOR_DIMENSION(3) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
-			BEGIN_INSTRUMENT(z)
+			BC_INSTRUMENT(z)
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -108,7 +105,7 @@ namespace detail {
 
 		FOR_DIMENSION(4) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
-			BEGIN_INSTRUMENT(z)
+			BC_INSTRUMENT(z)
 
 			int ia = z.a(0);
 			int ib = z.b(0);
@@ -190,8 +187,9 @@ namespace detail {
 	inline void recursive_stencil_A(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
+		constexpr auto NextDim = next_dim<Dim, Target_Hyperspace::dimensions>::value;
 
-		//std::cout << "A-" << z << " t(" << t0 << "," << t1 << ") " << Dim << std::endl;
+		//std::cout << "A-" << z << " t(" << t0 << "," << t1 << ") DIM:" << Dim << std::endl;
 
 		const auto deltaT = t1-t0;
 		const auto a  = z.a(Dim);
@@ -203,26 +201,29 @@ namespace detail {
 
 		assert(da >= db);
 
+	 //std::cout << "         deltaT: "   <<  deltaT  << std::endl;
+     //std::cout << "         a: "        <<  a   << std::endl;
+     //std::cout << "         b: "        <<  b   << std::endl;
+     //std::cout << "         da: "       <<  da  << std::endl;
+     //std::cout << "         db: "       <<  db  << std::endl;
+     //std::cout << "         deltaBase: "<<  deltaBase << std::endl;
+     //std::cout << "         slopeLeft: "<<  slopeDim.first << std::endl;
+     //std::cout << "         slopeRight: "<<  slopeDim.second << std::endl;
+
+
 		// spatial cut (this case cuts in M)
 		if (deltaBase >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){
-
-			const auto split = a + deltaBase /2;
-
-			//std::cout << " cut in M @" << split << std::endl;
-			const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (split, z, slopeDim.first, slopeDim.second);
-			assert(subSpaces.size() == 3);
+			const auto cut = (deltaBase /2);
+			const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (a+cut, z, slopeDim.first, slopeDim.second);
 
 			SPAWN ( left, (recursive_stencil_A<DataStorage, Kernel, Dim>), data, k, subSpaces[0], t0, t1);
 			recursive_stencil_A<DataStorage, Kernel, Dim>( data, k, subSpaces[1], t0, t1);
 			SYNC(left);
 
-			recursive_stencil_B<DataStorage, Kernel, Dim> (data, k, subSpaces[2], t0, t1);
+			recursive_stencil_B<DataStorage, Kernel, Dim>( data, k, subSpaces[2], t0, t1);
 		}
-		// if we have done all possible partitions in this dimension, move to next dimension before time cut
-		else if (Dim > 0){
-
-			recursive_stencil_dispatch<DataStorage, Kernel, next_dim<Dim, Target_Hyperspace::dimensions>::value> (data, k, z, t0, t1);
-
+		else if (Dim != 0){
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, k, z, t0, t1);
 		}
 		// time cut
 		else if (deltaT > TIME_CUTOFF){
@@ -231,7 +232,7 @@ namespace detail {
 			assert(halfTime >= 1);
 			//std::cout << " time cut " << "(" << t0 << "," << halfTime+t0 << "](" << halfTime+t0 << "," << t1 << "]" << std::endl;
 
-			recursive_stencil_dispatch <DataStorage, Kernel, next_dim<Dim, Target_Hyperspace::dimensions>::value>(data, k, z, t0, t0+halfTime);
+			recursive_stencil_A <DataStorage, Kernel, Dim>(data, k, z, t0, t0+halfTime);
 
 			// We must update all the dimensions as we move in time.... 
 			auto upZoid = z;
@@ -241,9 +242,10 @@ namespace detail {
 			}
 			upZoid.increaseStep();
 
-			recursive_stencil_dispatch<DataStorage, Kernel, next_dim<Dim, Target_Hyperspace::dimensions>::value>(data, k, upZoid, t0+halfTime , t1);
+			recursive_stencil_A<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime, t1);
 		}
 		else{
+			//std::cout << " Base Case: " << z << std::endl;
 			base_case (data, k, z, t0, t1);
 		}
 	}
@@ -254,6 +256,7 @@ namespace detail {
 	inline void recursive_stencil_B(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
+		constexpr auto NextDim = next_dim<Dim, Target_Hyperspace::dimensions>::value;
 
 		//std::cout << "B-" << z << " t(" << t0 << "," << t1 << ") " << Dim << std::endl;
 
@@ -282,10 +285,8 @@ namespace detail {
 			SYNC(left);
 
 		}
-		else if (Dim > 0){
-
-			recursive_stencil_dispatch<DataStorage, Kernel, next_dim<Dim, Target_Hyperspace::dimensions>::value> (data, k, z, t0, t1);
-
+		else if (Dim != 0){
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, k, z, t0, t1);
 		}
 		// time cut
 		else if (deltaT > TIME_CUTOFF){
@@ -293,13 +294,11 @@ namespace detail {
 
 			// little optimization, if the base of the hyp in this dimmension is 0, we can skip it and improve spatial cut chances by shifting the piramid
 			// by one
-			const int halfTime = (a!=b)? deltaT>>2: (deltaT>>2)+1;
+			const int halfTime = (a!=b) ? deltaT>>2 : (deltaT>>2)+1;
 			assert(halfTime >= 1 && halfTime < deltaT);
 
 			//std::cout << " time cut " << "(" << t0 << "," << halfTime+t0 << "](" << halfTime+t0 << "," << t1 << "]" << std::endl;
-
-			recursive_stencil_dispatch<DataStorage, Kernel, next_dim<Dim, Target_Hyperspace::dimensions>::value>(data, k, z, t0, t0+halfTime);
-
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, k, z, t0, t0+halfTime);
 
 			// We must update all the dimensions as we move in time.... 
 			auto upZoid = z;
@@ -309,7 +308,7 @@ namespace detail {
 			}
 			upZoid.increaseStep();
 
-			recursive_stencil_dispatch<DataStorage, Kernel, next_dim<Dim, Target_Hyperspace::dimensions>::value>(data, k, upZoid, t0+halfTime , t1);
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, k, upZoid, t0+halfTime, t1);
 		}
 		else {
 

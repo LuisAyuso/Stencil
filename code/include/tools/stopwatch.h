@@ -134,7 +134,10 @@ class StopWatch{
 		}
 
 		~swTicket(){
-			assert(finished);
+			if (!finished){
+				sw.endTiket(*this);
+				finished = true;
+			}
 		}
 	};
 

@@ -6,11 +6,12 @@
 
 #include "tools.h"
 #include "print.h"
+#include "tools/instrument.h"
 
 namespace stencil{
 
 	struct CutWithSlopes{
-		int split_value;
+		int cut_point;
 		int da;
 		int db;
 	};
@@ -202,8 +203,8 @@ namespace stencil{
 		template <unsigned Dim>
 		static inline CutDim_exact split_W(const Hyperspace<Dimensions>& hyp, int da, int db){
 
-
-			//std::cout << "W " << split_value << "  " << da << ":" << db << std::endl;
+			SPLIT_INSTRUMENT(hyp);
+			//std::cout << "W " << cut_point << "  " << da << ":" << db << std::endl;
 			//std::cout << hyp << std::endl;
 
 			auto central = hyp;
@@ -225,24 +226,33 @@ namespace stencil{
 		 * 	Split dimension, one two triangles, one inverted triangle afterwards
 		 */
 		template <unsigned Dim>
-		static inline CutDim_exact split_M(int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
+		static inline CutDim_exact split_M(int cut_point, const Hyperspace<Dimensions>& hyp, int da, int db){
 
-			//std::cout << "M " << split_value << "  " << da << ":" << db << std::endl;
+			assert (cut_point > hyp.scopes[Dim].a && "can not cut on bounduary");
+			assert (cut_point < hyp.scopes[Dim].b && "can not cut on bounduary");
+
+			SPLIT_INSTRUMENT(hyp);
+			//std::cout << "  -cut " << hyp << " @ " << cut_point << "  " << da << ":" << db << std::endl;
+
 
 			auto left = hyp;
-			left.scopes[Dim].b = split_value;
+			left.scopes[Dim].b = cut_point;
 			left.scopes[Dim].db = db;
 
 			auto right = hyp;
-			right.scopes[Dim].a = split_value;
+			right.scopes[Dim].a = cut_point;
 			right.scopes[Dim].da = da;
 
 			auto central = hyp;
-			central.scopes[Dim].a = split_value;
-			central.scopes[Dim].b = split_value;
+			central.scopes[Dim].a = cut_point;
+			central.scopes[Dim].b = cut_point;
 			central.scopes[Dim].da = -1 * da;
 			central.scopes[Dim].db = -1 * db;
 			central.step ++;
+
+			//std::cout << "     - " << left << std::endl;
+			//std::cout << "     - " << right << std::endl;
+			//std::cout << "     - " << central << std::endl;
 
 			return {{left, right, central}};
 		}
@@ -252,17 +262,17 @@ namespace stencil{
 		typedef std::vector<Hyperspace<Dimensions>> CutDim;
 
 		template <unsigned Dim>
-		static inline CutDim split_1d(int split_value, const Hyperspace<Dimensions>& hyp, int da, int db){
+		static inline CutDim split_1d(int cut_point, const Hyperspace<Dimensions>& hyp, int da, int db){
 
-			if (split_value == hyp.scopes[Dim].a) return {hyp};
-			if (split_value == hyp.scopes[Dim].b) return {hyp};
+			if (cut_point == hyp.scopes[Dim].a) return {hyp};
+			if (cut_point == hyp.scopes[Dim].b) return {hyp};
 
-			assert(split_value > hyp.scopes[Dim].a  && "nonsense split");
-			assert(split_value < hyp.scopes[Dim].b  && "nonsense split");
+			assert(cut_point > hyp.scopes[Dim].a  && "nonsense split");
+			assert(cut_point < hyp.scopes[Dim].b  && "nonsense split");
 
 			// if the dimension pressents a shape like an inverted V: split it in M
 			if (hyp.scopes[Dim].da >= 0 && hyp.scopes[Dim].db <= 0) {
-				auto partition = split_M<Dim> (split_value,  hyp, da, db);
+				auto partition = split_M<Dim> (cut_point,  hyp, da, db);
 				return CutDim(partition.begin(), partition.end());
 			}
 
@@ -306,7 +316,7 @@ namespace stencil{
 	// ~~~~~~~~~~~  As template paramenters ~~~~~~~~~~~~~~
 		template <unsigned Dim >
 		inline CutDim split_slopes(const CutWithSlopes& cut) const{
-			return split_1d<Dim> (cut.split_value, *this, cut.da, cut.db);
+			return split_1d<Dim> (cut.cut_point, *this, cut.da, cut.db);
 		}
 
 		template <unsigned Dim, typename ... Cuts>
@@ -316,7 +326,7 @@ namespace stencil{
 
 			CutDim res;
 			for (const auto& hyp : tmp){
-				auto x = split_1d<Dim> (cut.split_value, hyp, cut.da, cut.db);
+				auto x = split_1d<Dim> (cut.cut_point, hyp, cut.da, cut.db);
 				res.insert(res.end(), x.begin(), x.end());
 			}
 
@@ -339,7 +349,7 @@ namespace stencil{
 			for (const auto& cut : cuts){
 
 				// each cut produces left/right + midle
-				auto tmp = split_1d<Dim> (cut.split_value, curHyp, cut.da, cut.db);
+				auto tmp = split_1d<Dim> (cut.cut_point, curHyp, cut.da, cut.db);
 
 				res.push_back(tmp[0]);
 				res.push_back(tmp[2]);
