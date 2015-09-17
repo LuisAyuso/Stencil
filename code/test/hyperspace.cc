@@ -329,21 +329,21 @@ TEST(Hyperspace, Split_2D_2){
 	EXPECT_EQ( n[8], Hyperspace<2> (1,1,-1, 1,  1,1,-1, 1, level+2));
 
 
-	std::vector<Hyperspace<2>> level0;
-	std::vector<Hyperspace<2>> level1;
-	std::vector<Hyperspace<2>> level2;
-
-	for (const auto& i: n){
-		if (i.getStep() == level) level0.push_back(i);
-		if (i.getStep() == level+1) level1.push_back(i);
-		if (i.getStep() == level+2) level2.push_back(i);
-	}
-
-	EXPECT_EQ(level0.size() + level1.size() + level2.size(), n.size());
-
-	EXPECT_EQ(level0.size(), 4);
-	EXPECT_EQ(level1.size(), 4);
-	EXPECT_EQ(level2.size(), 1);
+//	std::vector<Hyperspace<2>> level0;
+//	std::vector<Hyperspace<2>> level1;
+//	std::vector<Hyperspace<2>> level2;
+//
+//	for (const auto& i: n){
+//		if (i.getStep() == level) level0.push_back(i);
+//		if (i.getStep() == level+1) level1.push_back(i);
+//		if (i.getStep() == level+2) level2.push_back(i);
+//	}
+//
+//	EXPECT_EQ(level0.size() + level1.size() + level2.size(), n.size());
+//
+//	EXPECT_EQ(level0.size(), 4);
+//	EXPECT_EQ(level1.size(), 4);
+//	EXPECT_EQ(level2.size(), 1);
 }
 
 TEST(Hyperspace, Split_2D_3){
@@ -362,24 +362,24 @@ TEST(Hyperspace, Split_2D_3){
 		EXPECT_TRUE(sum == 1) << i << "is repeated:";
 	}
 
-	std::vector<Hyperspace<2>> level0;
-	std::vector<Hyperspace<2>> level1;
-	std::vector<Hyperspace<2>> level2;
-
-	for (const auto& i: n){
-		if (i.getStep() == 0) level0.push_back(i);
-		if (i.getStep() == 1) level1.push_back(i);
-		if (i.getStep() == 2) level2.push_back(i);
-	}
-
-	EXPECT_EQ(level0.size() + level1.size() + level2.size(), n.size());
-
-//	for (const auto& e: level0)
-//		std::cout << e << std::endl;
-
-	EXPECT_EQ(level0.size(), 9);
-	EXPECT_EQ(level1.size(), 12);
-	EXPECT_EQ(level2.size(), 4);
+//	std::vector<Hyperspace<2>> level0;
+//	std::vector<Hyperspace<2>> level1;
+//	std::vector<Hyperspace<2>> level2;
+//
+//	for (const auto& i: n){
+//		if (i.getStep() == 0) level0.push_back(i);
+//		if (i.getStep() == 1) level1.push_back(i);
+//		if (i.getStep() == 2) level2.push_back(i);
+//	}
+//
+//	EXPECT_EQ(level0.size() + level1.size() + level2.size(), n.size());
+//
+////	for (const auto& e: level0)
+////		std::cout << e << std::endl;
+//
+//	EXPECT_EQ(level0.size(), 9);
+//	EXPECT_EQ(level1.size(), 12);
+//	EXPECT_EQ(level2.size(), 4);
 }
 
 TEST(Hyperspace, Split_2D_8){
@@ -400,16 +400,16 @@ TEST(Hyperspace, Split_2D_8){
 		EXPECT_TRUE(sum == 1) << i << "is repeated:";
 	}
 
-	std::cout << "========================== " << std::endl;
-	std::vector<int> levels(3);
-
-	ASSERT_FALSE(n.empty() );
-	for (const auto& i: n){
-		levels[i.getStep()] ++;
-	}
-
-	EXPECT_EQ(levels[0], 8*8);
-	EXPECT_EQ(levels[1], 108);
+//	std::cout << "========================== " << std::endl;
+//	std::vector<int> levels(3);
+//
+//	ASSERT_FALSE(n.empty() );
+//	for (const auto& i: n){
+//		levels[i.getStep()] ++;
+//	}
+//
+//	EXPECT_EQ(levels[0], 8*8);
+//	EXPECT_EQ(levels[1], 108);
 }
 
 TEST(Hyperspace, Split_2D_16){

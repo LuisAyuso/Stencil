@@ -28,7 +28,7 @@ namespace stencil{
 		};
 
 		std::array<Scope, Dimensions> scopes;
-		unsigned step;
+		//unsigned step;
 
 	public:
 
@@ -39,7 +39,7 @@ namespace stencil{
 			
 
 		Hyperspace( const Hyperspace<Dimensions>& o)
-			: scopes(o.scopes), step(o.step)
+			: scopes(o.scopes) // , step(o.step)
 		{
 			for (auto i = 0; i < Dimensions; ++i){
 				assert(scopes[i].a <= scopes[i].b);
@@ -62,7 +62,7 @@ namespace stencil{
 
 		Hyperspace<Dimensions> operator=(const Hyperspace<Dimensions>& o){
 			scopes = o.scopes;
-			step = o.step;
+			//step = o.step;
 
 			for (auto i = 0; i < Dimensions; ++i){
 				assert(scopes[i].a <= scopes[i].b);
@@ -87,7 +87,8 @@ namespace stencil{
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spetialized ctors  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		Hyperspace( int xa, int xb, int dxa, int dxb, unsigned s=0)
-				: scopes ({Scope{xa,xb,dxa,dxb}}), step(s){
+				: scopes ({Scope{xa,xb,dxa,dxb}})  // , step(s)
+		{
 			static_assert ( Dimensions == 1 , "this constructor is only allowed for 1D");
 			for (auto i = 0; i < Dimensions; ++i){
 				assert(scopes[i].a <= scopes[i].b);
@@ -99,7 +100,8 @@ namespace stencil{
 
 		Hyperspace( int xa, int xb, int dxa, int dxb,
 		            int ya, int yb, int dya, int dyb, unsigned s=0)
-				: scopes ({Scope{xa,xb,dxa,dxb}, Scope{ya,yb,dya,dyb}}), step(s){
+				: scopes ({Scope{xa,xb,dxa,dxb}, Scope{ya,yb,dya,dyb}}) //, step(s)
+		{
 			static_assert ( Dimensions == 2 , "this constructor is only allowed for 2D");
 			for (auto i = 0; i < Dimensions; ++i){
 				assert(scopes[i].a <= scopes[i].b);
@@ -112,7 +114,8 @@ namespace stencil{
 		Hyperspace( int xa, int xb, int dxa, int dxb,
 		            int ya, int yb, int dya, int dyb,
 		            int za, int zb, int dza, int dzb, unsigned s=0)
-				: scopes ({Scope{xa,xb,dxa,dxb}, Scope{ya,yb,dya,dyb}, Scope{za,zb,dza,dzb}}), step(s){
+				: scopes ({Scope{xa,xb,dxa,dxb}, Scope{ya,yb,dya,dyb}, Scope{za,zb,dza,dzb}}) //, step(s)
+		{
 			static_assert ( Dimensions == 2 , "this constructor is only allowed for 3D");
 			for (auto i = 0; i < Dimensions; ++i){
 				assert(scopes[i].a <= scopes[i].b);
@@ -127,7 +130,8 @@ namespace stencil{
 				   std::array<int, Dimensions> da,
 				   std::array<int, Dimensions> db, 
 				   unsigned s=0) 
-				: step(s){ 
+				//: step(s)
+		{ 
 
 			for (int i = 0; i< Dimensions; ++i)
 				scopes[i] = {a[i], b[i], da[i], db[i]};
@@ -185,13 +189,13 @@ namespace stencil{
 		return scopes[dimension].db;
 	}
 
-	int getStep() const{
-		return step;
-	}
-
-	void increaseStep(){ 
-		step++;
-	}
+//	int getStep() const{
+//		return step;
+//	}
+//
+//	void increaseStep(){ 
+//		step++;
+//	}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~ Spliting tools ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -213,11 +217,11 @@ namespace stencil{
 
 			auto left = hyp;
 			left.scopes[Dim].b = left.scopes[Dim].a;
-			left.step ++;
+			//left.step ++;
 	
 			auto right = hyp;
 			right.scopes[Dim].a = right.scopes[Dim].b;
-			right.step ++;
+			//right.step ++;
 
 			return {{central, left, right}};
 		}
@@ -248,7 +252,67 @@ namespace stencil{
 			central.scopes[Dim].b = cut_point;
 			central.scopes[Dim].da = -1 * da;
 			central.scopes[Dim].db = -1 * db;
-			central.step ++;
+			//central.step ++;
+
+			//std::cout << "     - " << left << std::endl;
+			//std::cout << "     - " << right << std::endl;
+			//std::cout << "     - " << central << std::endl;
+
+			return {{left, right, central}};
+		}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~ Once again, turn slopes into template paramenters ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+		/**
+		 * 	Split dimension, one central triagle plus two inverted triangles afterwards
+		 */
+		template <unsigned Dim, int Slope>
+		static inline CutDim_exact split_W2(const Hyperspace<Dimensions>& hyp){
+
+			SPLIT_INSTRUMENT(hyp);
+			//std::cout << "W " << cut_point <<  std::endl;
+			//std::cout << hyp << std::endl;
+
+			auto central = hyp;
+			central.scopes[Dim].da = Slope;
+			central.scopes[Dim].db = -Slope;
+
+			auto left = hyp;
+			left.scopes[Dim].b = left.scopes[Dim].a;
+			//left.step ++;
+	
+			auto right = hyp;
+			right.scopes[Dim].a = right.scopes[Dim].b;
+			//right.step ++;
+
+			return {{central, left, right}};
+		}
+		/**
+		 * 	Split dimension, one two triangles, one inverted triangle afterwards
+		 */
+		template <unsigned Dim, int Slope>
+		static inline CutDim_exact split_M2(int cut_point, const Hyperspace<Dimensions>& hyp){
+
+			assert (cut_point > hyp.scopes[Dim].a && "can not cut on bounduary");
+			assert (cut_point < hyp.scopes[Dim].b && "can not cut on bounduary");
+
+			SPLIT_INSTRUMENT(hyp);
+			//std::cout << "  -cut " << hyp << " @ " << cut_point << std::endl;
+
+			auto left = hyp;
+			left.scopes[Dim].b = cut_point;
+			left.scopes[Dim].db = -1 * Slope;
+
+			auto right = hyp;
+			right.scopes[Dim].a = cut_point;
+			right.scopes[Dim].da = Slope;
+
+			auto central = hyp;
+			central.scopes[Dim].a = cut_point;
+			central.scopes[Dim].b = cut_point;
+			central.scopes[Dim].da = -1 * Slope;
+			central.scopes[Dim].db = Slope;
+			//central.step ++;
 
 			//std::cout << "     - " << left << std::endl;
 			//std::cout << "     - " << right << std::endl;
@@ -372,8 +436,8 @@ namespace stencil{
 				}
 			}
 
-		//	return true;
-			return o.step == step;
+			return true;
+			//return o.step == step;
 		}
 
 
@@ -385,7 +449,7 @@ namespace stencil{
 			for (const auto& s : scopes) {
 				out << "[" << s.a << "," << s.b << "](" << s.da << "," << s.db << ")";
 			}
-			out << " p(" << step << ")";	
+			//out << " p(" << step << ")";	
 			return out;
 		}
 		

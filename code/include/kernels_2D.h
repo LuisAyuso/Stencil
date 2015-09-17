@@ -21,9 +21,11 @@ namespace example_kernels{
 				getElem(data, i, j, 1) = pix;
 			}
 
-			inline std::pair<int,int> getSlope(unsigned dimension) const{
-				return {1,-1};
-			}
+			//inline std::pair<int,int> getSlope(unsigned dimension) const{
+			//	return {1,-1};
+			//}
+
+			static const unsigned int neighbours = 1;
 		};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,9 +51,10 @@ namespace example_kernels{
 				}
 			}
 
-			inline std::pair<int,int> getSlope(unsigned dimension) const{
-				return {1,-1};
-			}
+			//inline std::pair<int,int> getSlope(unsigned dimension) const{
+			//	return {1,-1};
+			//}
+			static const unsigned int neighbours = 1;
 		};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -67,9 +70,11 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = t%maxValue;
 			}
 
-			inline std::pair<int,int> getSlope(unsigned dimension) const{
-				return {1,-1};
-			}
+			//inline std::pair<int,int> getSlope(unsigned dimension) const{
+			//	return {1,-1};
+			//}
+			
+			static const unsigned int neighbours = 1;
 		};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,9 +103,10 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			inline std::pair<int,int> getSlope(unsigned dimension) const{
-				return {1,-1};
-			}
+			//inline std::pair<int,int> getSlope(unsigned dimension) const{
+			//	return {1,-1};
+			//}
+			static const unsigned int neighbours = 1;
 		};
 
 		template< typename DataStorage> 
@@ -132,9 +138,10 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			inline std::pair<int,int> getSlope(unsigned dimension) const{
-				return {2,-2};
-			}
+			//inline std::pair<int,int> getSlope(unsigned dimension) const{
+			//	return {2,-2};
+			//}
+			static const unsigned int neighbours = 2;
 		};
 
 		template< typename DataStorage> 
@@ -157,7 +164,7 @@ namespace example_kernels{
 		template< typename DataStorage, unsigned Size> 
 		struct BlurN_k : public Kernel<DataStorage, 2, BlurN_k<DataStorage, Size>>{
 
-			const unsigned slope;
+			static const unsigned int neighbours = (Size-1)>>1;
 
 			float Kcoeff[Size][Size];
 
@@ -165,8 +172,7 @@ namespace example_kernels{
 			  return exp( -(((x-mu)/(sigma))*((x-mu)/(sigma)))/2.0 );
 			}
 
-			BlurN_k () 
-			:slope((Size-1)/2){
+			BlurN_k () {
 				assert(Size%2 == 1);
 
 
@@ -206,22 +212,22 @@ namespace example_kernels{
 				assert(j < getH(data));
 
 				auto xMin = i;
-				for (int v = 1; v <= slope; ++v) xMin = MAX(0, ((int)i)-v);
+				for (int v = 1; v <= neighbours; ++v) xMin = MAX(0, ((int)i)-v);
 				auto xMax = i;
-				for (int v = 1; v <= slope; ++v) xMax = MIN(getW(data)-1, i+v);
+				for (int v = 1; v <= neighbours; ++v) xMax = MIN(getW(data)-1, i+v);
 		
 				auto yMin = j;
-				for (int v = 1; v <= slope; ++v) yMin = MAX(0, ((int)j)-v);
+				for (int v = 1; v <= neighbours; ++v) yMin = MAX(0, ((int)j)-v);
 				auto yMax = j;
-				for (int v = 1; v <= slope; ++v) yMax = MIN(getH(data)-1, j+v);
+				for (int v = 1; v <= neighbours; ++v) yMax = MIN(getH(data)-1, j+v);
 
 				for (unsigned x = xMin; x <= xMax; ++x){
 					for (unsigned y = yMin; y <= yMax; ++y){	
 						
 							// this is quite not right, this offset might produce weird values 
 							// on bonduaries, but results are uniform
-						int ki =  x-i+slope;
-						int kj =  y-j+slope;
+						int ki =  x-i+neighbours;
+						int kj =  y-j+neighbours;
 
 						auto e = getElem(data, x, y, t);
 						sum += e * Kcoeff[ki][kj];
@@ -231,9 +237,9 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			inline std::pair<int,int> getSlope(unsigned dimension) const{
-				return {slope,-slope};
-			}
+			//inline std::pair<int,int> getSlope(unsigned dimension) const{
+			//	return {slope,-slope};
+			//}
 		};
 
 }// example_kernels

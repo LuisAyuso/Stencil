@@ -24,9 +24,7 @@ namespace example_kernels{
 				getElem(data, i, (t+1)%2) = (left + right + me) / 3.0;
 			}
 
-			inline std::pair<int,int> getSlope(unsigned dimension) const{
-				return {1,-1};
-			}
+			static const unsigned int neighbours = 1;
 		};
 
 }// example_kernels

@@ -197,8 +197,7 @@ namespace detail {
 		const auto da = z.da(Dim);
 		const auto db = z.db(Dim);
 		const auto deltaBase = b - a;
-		const auto slopeDim = k.getSlope(Dim);
-
+		const auto neighbours = Kernel::neighbours;
 		assert(da >= db);
 
 	 //std::cout << "         deltaT: "   <<  deltaT  << std::endl;
@@ -207,14 +206,11 @@ namespace detail {
      //std::cout << "         da: "       <<  da  << std::endl;
      //std::cout << "         db: "       <<  db  << std::endl;
      //std::cout << "         deltaBase: "<<  deltaBase << std::endl;
-     //std::cout << "         slopeLeft: "<<  slopeDim.first << std::endl;
-     //std::cout << "         slopeRight: "<<  slopeDim.second << std::endl;
-
 
 		// spatial cut (this case cuts in M)
-		if (deltaBase >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){
+		if (deltaBase >= 2*2*neighbours*deltaT){
 			const auto cut = (deltaBase /2);
-			const auto& subSpaces  = Target_Hyperspace::template split_M<Dim> (a+cut, z, slopeDim.first, slopeDim.second);
+			const auto& subSpaces  = Target_Hyperspace::template split_M2<Dim, neighbours> (a+cut, z);
 
 			SPAWN ( left, (recursive_stencil_A<DataStorage, Kernel, Dim>), data, k, subSpaces[0], t0, t1);
 			recursive_stencil_A<DataStorage, Kernel, Dim>( data, k, subSpaces[1], t0, t1);
@@ -240,7 +236,7 @@ namespace detail {
 				upZoid.a(d) = z.a(d) + z.da(d)*halfTime;
 				upZoid.b(d) = z.b(d) + z.db(d)*halfTime;
 			}
-			upZoid.increaseStep();
+			//upZoid.increaseStep();
 
 			recursive_stencil_A<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime, t1);
 		}
@@ -267,15 +263,15 @@ namespace detail {
 		const auto db = z.db(Dim);
 		const auto deltaBase = b - a;
 		const auto deltaTop = (b + db * deltaT) - (a + da * deltaT);
-		const auto slopeDim = k.getSlope(Dim);
+		const auto neighbours = Kernel::neighbours;
 
 		assert(da < db);
 		
 		// spatial cut (this case cuts in W)
-		if (deltaTop >= 2*(ABS(slopeDim.first)+ABS(slopeDim.second))*deltaT){
+		if (deltaTop >= 2*2*neighbours*deltaT){
 
 			//std::cout << " cut in W " << std::endl;
-			const auto& subSpaces  = Target_Hyperspace::template split_W<Dim> (z, slopeDim.first, slopeDim.second);
+			const auto& subSpaces  = Target_Hyperspace::template split_W2<Dim, neighbours> (z);
 			assert(subSpaces.size() == 3);
 
 			recursive_stencil_A<DataStorage, Kernel, Dim> (data, k, subSpaces[0], t0, t1);
@@ -291,7 +287,6 @@ namespace detail {
 		// time cut
 		else if (deltaT > TIME_CUTOFF){
 
-
 			// little optimization, if the base of the hyp in this dimmension is 0, we can skip it and improve spatial cut chances by shifting the piramid
 			// by one
 			const int halfTime = (a!=b) ? deltaT>>2 : (deltaT>>2)+1;
@@ -306,7 +301,7 @@ namespace detail {
 				upZoid.a(d) = z.a(d) + z.da(d)*halfTime;
 				upZoid.b(d) = z.b(d) + z.db(d)*halfTime;
 			}
-			upZoid.increaseStep();
+			//upZoid.increaseStep();
 
 			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, k, upZoid, t0+halfTime, t1);
 		}

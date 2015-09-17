@@ -116,9 +116,10 @@ namespace {
 			else 					getElem(data, i, j, t+1) = getElem(data, i-1, j-1, t);
 		}
 
-		std::pair<int,int> getSlope(unsigned dimension) const{
-			return {1,-1};
-		}
+	//	std::pair<int,int> getSlope(unsigned dimension) const{
+	//		return {1,-1};
+	//	}
+		static const unsigned int neighbours = 1;
 	};
 
 }
@@ -364,9 +365,11 @@ namespace {
 		//	std::cout << getElem(data, i, j, k, t+1)  << ":" << getElem(data, i, j, k, t) <<  "@ (" << i << "," << j << "," << k << ")" << std::endl;
 		}
 
-		std::pair<int,int> getSlope(unsigned dimension) const{
-			return {1,-1};
-		}
+		//std::pair<int,int> getSlope(unsigned dimension) const{
+		//	return {1,-1};
+		//}
+
+		static const unsigned int neighbours = 1;
 	};
 
 }

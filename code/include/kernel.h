@@ -20,36 +20,34 @@ namespace stencil{
 	template <typename Data, unsigned Dimensions, typename Parent>
 	struct Kernel{
 
-		// FIXME: i just found that this is actually never used, since the recusive algorithm is instanciated for the specific routine
-		// 			this is not bad, i leave here the kernel anyway to model how it should look like
-
-		#define FOR_DIMENSION(N) \
-			std::enable_if< is_eq<Dimensions, N>::value, void>
-
-		FOR_DIMENSION(1) operator() (Data& data, int i, int t) const{
-			static_cast<Parent*>(this)->operator() (data, i, t);
-		}
-		FOR_DIMENSION(2) operator() (Data& data, int i, int j, int t) const{
-			static_cast<Parent*>(this)->operator() (data, i, j, t);
-		}
-		FOR_DIMENSION(3) operator() (Data& data, int i, int j, int k, int t) const{
-			static_cast<Parent*>(this)->operator() (data, i, j, k, t);
-		}
-		FOR_DIMENSION(4) operator() (Data& data, int i, int j, int k, int w, int t) const{
-			static_cast<Parent*>(this)->operator() (data, i, j, k, w, t);
-		}
-
-		#undef FOR_DIMENSION
-		
-		std::pair<int,int> getSlope(unsigned dimension)const {
-			return static_cast<Parent*>(this)->getSlope(dimension);
-		}
-
-
 		static const unsigned dimensions = Dimensions;
 
+	private:
+		static const unsigned size = sizeof(Parent);
 	};
 
+
+	#define FOR_DIMENSION(N) \
+	template <typename DataStorage, typename Kernel> \
+			inline typename std::enable_if< is_eq<Kernel::dimensions, N>::value, void>::type
+
+		FOR_DIMENSION(1)  solve (DataStorage& data, int x, int t){
+			static_assert(Kernel::size ==1 , "Kernel class must not have fields");
+		}
+
+		FOR_DIMENSION(2)  solve (DataStorage& data, int x, int y, int t){
+			static_assert(Kernel::size ==1 , "Kernel class must not have fields");
+		}
+
+		FOR_DIMENSION(3)  solve (DataStorage& data, int x, int y, int z, int t){
+			static_assert(Kernel::size ==1 , "Kernel class must not have fields");
+		}
+
+		FOR_DIMENSION(4)  solve (DataStorage& data, int x, int y, int z, int w, int t){
+			static_assert(Kernel::size ==1 , "Kernel class must not have fields");
+		}
+
+	#undef FOR_DIMENSION
 
 
 } // stencil namespace
