@@ -117,12 +117,12 @@ int main(int argc, char *argv[]) {
 	//using KernelType = example_kernels::BlurN_k<ImageSpace, 7>;
 	//using KernelType = example_kernels::BlurN_k<ImageSpace, 9>;
 
-	KernelType kernel;
+	//KernelType kernel;
 
 	// ~~~~~~~~~~~~~~~~ RUN ~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if (REC || ALL){
 		//TIME_CALL( recursive_stencil( recBuffer, kernel, timeSteps) );
-		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, kernel, timeSteps);
+		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, timeSteps);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
 
 					LOOP_INSTRUMENT(i, t);
 		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
-						kernel(iteBuffer, i, j, t);
+						KernelType::withBonduaries(iteBuffer, i, j, t);
 					}
 					END_INSTUMENT;
 				});
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 
 					LOOP_INSTRUMENT(j, t);
 					for (unsigned i = 0; i < getW(iteBuffer); ++i){
-						kernel(invBuffer, i, j, t);
+						KernelType::withBonduaries(invBuffer, i, j, t);
 					}
 					END_INSTUMENT;
 				});

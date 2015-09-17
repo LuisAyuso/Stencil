@@ -81,7 +81,7 @@ TEST(Kernel, Operator){
 }
 
 
-
+/*
 TEST(Kernel, Gaussian_Blur){
 
 	using namespace example_kernels;
@@ -151,4 +151,4 @@ TEST(Kernel, Gaussian_Blur){
 			}
 		}
 	}
-}
+}*/

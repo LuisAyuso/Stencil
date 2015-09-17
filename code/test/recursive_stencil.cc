@@ -31,6 +31,7 @@ TEST(Stencil1D, AVG){
 	typedef int Type;
 
 	const int SIZE = 100;
+	using KernelType = Avg_1D_k<BufferSet<Type, 1>>;
 
 	auto data  = initData<Type> (SIZE);
 	{
@@ -38,12 +39,11 @@ TEST(Stencil1D, AVG){
 		BufferSet<Type, 1> buff1 ({SIZE}, data);
 		BufferSet<Type, 1> buff2 ({SIZE}, data);
 
-		Avg_1D_k<BufferSet<Type, 1>> kernel;
 
-		recursive_stencil<BufferSet<Type, 1>, Avg_1D_k<BufferSet<Type, 1>>>( buff1, kernel, 1);
+		recursive_stencil<BufferSet<Type, 1>, Avg_1D_k<BufferSet<Type, 1>>>( buff1, 1);
 
 		for (int i=0; i < SIZE; ++i)
-			kernel(buff2, i, 0);
+			KernelType::withBonduaries(buff2, i, 0);
 
 		for (int i=0; i < SIZE; ++i){
 			EXPECT_EQ(getElem(buff1, i, 0), getElem(buff1, i, 0));
@@ -56,13 +56,11 @@ TEST(Stencil1D, AVG){
 		BufferSet<Type, 1> buff1 ({SIZE}, data);
 		BufferSet<Type, 1> buff2 ({SIZE}, data);
 
-		Avg_1D_k<BufferSet<Type, 1>> kernel;
-
-		recursive_stencil<BufferSet<Type, 1>, Avg_1D_k<BufferSet<Type, 1>>>( buff1, kernel, 40);
+		recursive_stencil<BufferSet<Type, 1>, Avg_1D_k<BufferSet<Type, 1>>>( buff1,  40);
 
 		for (int t=0; t < 40; ++t)
 		for (int i=0; i < SIZE; ++i)
-			kernel(buff2, i, t);
+			KernelType::withBonduaries(buff2, i, t);
 
 		for (int i=0; i < SIZE; ++i){
 			EXPECT_EQ(getElem(buff1, i, 0), getElem(buff1, i, 0));
@@ -80,24 +78,23 @@ TEST(Stencil2D, Copy){
 	auto data  = initData<Type> (10*10);
 
 	BufferSet<Type, 2> buff1 ({10, 10}, data);
+	using KernelType = Copy_k<BufferSet<Type, 2>>;
 
-	Copy_k<BufferSet<Type, 2>> kernel;
-
-	recursive_stencil<BufferSet<Type, 2>, Copy_k<BufferSet<Type, 2>>>( buff1, kernel, 1);
-
-	for (auto i = 0; i < 10; i ++)
-	for (auto j = 0; j < 10; j ++)
-		EXPECT_EQ( getElem(buff1, i, j, 0), getElem(buff1, i, j, 1));
-
-
-	recursive_stencil<BufferSet<Type, 2>, Copy_k<BufferSet<Type, 2>>>( buff1, kernel, 10);
+	recursive_stencil<BufferSet<Type, 2>, Copy_k<BufferSet<Type, 2>>>( buff1, 1);
 
 	for (auto i = 0; i < 10; i ++)
 	for (auto j = 0; j < 10; j ++)
 		EXPECT_EQ( getElem(buff1, i, j, 0), getElem(buff1, i, j, 1));
 
 
-	recursive_stencil<BufferSet<Type, 2>, Copy_k<BufferSet<Type, 2>>>( buff1, kernel, 20);
+	recursive_stencil<BufferSet<Type, 2>, Copy_k<BufferSet<Type, 2>>>( buff1, 10);
+
+	for (auto i = 0; i < 10; i ++)
+	for (auto j = 0; j < 10; j ++)
+		EXPECT_EQ( getElem(buff1, i, j, 0), getElem(buff1, i, j, 1));
+
+
+	recursive_stencil<BufferSet<Type, 2>, Copy_k<BufferSet<Type, 2>>>( buff1, 20);
 
 	for (auto i = 0; i < 10; i ++)
 	for (auto j = 0; j < 10; j ++)
@@ -110,15 +107,12 @@ namespace {
 	template< typename DataStorage> 
 	struct Translate_k : public Kernel<DataStorage, 2, Translate_k<DataStorage>>{
 
-		void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
+		static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t){
 			if 		(0> (int)i-1)	getElem(data, i, j, t+1) = 0;
 			else if (0> (int)j-1)	getElem(data, i, j, t+1) = 0;
 			else 					getElem(data, i, j, t+1) = getElem(data, i-1, j-1, t);
 		}
 
-	//	std::pair<int,int> getSlope(unsigned dimension) const{
-	//		return {1,-1};
-	//	}
 		static const unsigned int neighbours = 1;
 	};
 
@@ -135,17 +129,16 @@ TEST(Stencil2D, Translate){
 	BufferSet<Type, 2> buff1 ({SIZE, SIZE}, data);
 	BufferSet<Type, 2> buff2 ({SIZE, SIZE}, data);
 
+	using KernelType = Translate_k<BufferSet<Type, 2>>;
 
-	Translate_k<BufferSet<Type, 2>> kernel;
-
-	recursive_stencil<BufferSet<Type, 2>, Translate_k<BufferSet<Type, 2>>>( buff1, kernel, 1);
+	recursive_stencil<BufferSet<Type, 2>, Translate_k<BufferSet<Type, 2>>>( buff1, 1);
 
 	for (auto i = 1; i < SIZE; i ++)
 	for (auto j = 1; j < SIZE; j ++)
 		EXPECT_EQ( getElem(buff1, i-1, j-1, 0), getElem(buff1, i, j, 1));
 
 
-	recursive_stencil<BufferSet<Type, 2>, Translate_k<BufferSet<Type, 2>>>( buff2, kernel, 2);
+	recursive_stencil<BufferSet<Type, 2>, Translate_k<BufferSet<Type, 2>>>( buff2, 2);
 
 	for (auto i = 2; i < SIZE; i ++)
 	for (auto j = 2; j < SIZE; j ++)
@@ -169,15 +162,14 @@ TEST(Stencil2D, Blur){
 	BufferSet<Type, 2> buff3 ({SIZE, SIZE}, data);
 	BufferSet<Type, 2> buff4 ({SIZE, SIZE}, data);
 
+	using KernelType = Blur3_k<BufferSet<Type, 2>>;
 
-	Blur3_k<BufferSet<Type, 2>> kernel;
-
-	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff1, kernel, 1);
+	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff1, 1);
 
 
 	for (int i = 0; i < SIZE; ++i)
 	for (int j = 0; j < SIZE; ++j)
-		kernel(buff2, i, j, 0);
+		KernelType::withBonduaries(buff2, i, j, 0);
 
 
 	for (auto i = 1; i < SIZE; i ++)
@@ -185,8 +177,8 @@ TEST(Stencil2D, Blur){
 		EXPECT_EQ( getElem(buff1, i, j, 1), getElem(buff2, i, j, 1));
 
 
-	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff3, kernel, 20);
-	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff4, kernel, 20);
+	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff3, 20);
+	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff4, 20);
 
 	for (auto i = 1; i < SIZE; i ++)
 	for (auto j = 1; j < SIZE; j ++)
@@ -204,17 +196,14 @@ TEST(Stencil2D, Blur11){
 
 	BufferSet<Type, 2> buff1 ({SIZE, SIZE}, data);
 	BufferSet<Type, 2> buff2 ({SIZE, SIZE}, data);
+	using KernelType = Blur3_k<BufferSet<Type, 2>>;
 
-
-	Blur3_k<BufferSet<Type, 2>> kernel;
-
-	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff1, kernel, TIMESTEPS);
-
+	recursive_stencil<BufferSet<Type, 2>, Blur3_k<BufferSet<Type, 2>>>( buff1, TIMESTEPS);
 
 	for (int t = 0; t < TIMESTEPS; ++t)
 	for (int i = 0; i < SIZE; ++i)
 	for (int j = 0; j < SIZE; ++j)
-		kernel(buff2, i, j, t);
+		KernelType::withBonduaries(buff2, i, j, t);
 
 
 	for (auto i = 1; i < SIZE; i ++)
@@ -234,28 +223,26 @@ TEST(Stencil3D, Translate){
 	BufferSet<Type, 3> buff1 ({SIZE, SIZE, SIZE}, data);
 	BufferSet<Type, 3> buff2 ({SIZE, SIZE, SIZE}, data);
 
+	using KernelType =Translate_3D_k<BufferSet<Type, 3>>;
 
-	Translate_3D_k<BufferSet<Type, 3>> kernel;
-
-	recursive_stencil( buff1, kernel, 1);
+	recursive_stencil<BufferSet<Type, 3>,KernelType> ( buff1, 1);
 
 	for (auto i = 1; i < SIZE; i ++)
 	for (auto j = 1; j < SIZE; j ++)
 	for (auto k = 1; k < SIZE; k ++)
 		EXPECT_EQ( getElem(buff1, i-1, j-1, k-1, 0), getElem(buff1, i, j, k, 1));
 
-
-	recursive_stencil( buff2, kernel, 2);
-
-	for (auto i = 2; i < SIZE; i ++)
-	for (auto j = 2; j < SIZE; j ++)
-	for (auto k = 2; k < SIZE; k ++)
-		EXPECT_EQ( getElem(buff2, i, j, k, 0), getElem(buff2, i-1, j-1, k-1, 1));
+	recursive_stencil<BufferSet<Type, 3>,KernelType> ( buff2, 2);
 
 	for (auto i = 2; i < SIZE; i ++)
 	for (auto j = 2; j < SIZE; j ++)
 	for (auto k = 2; k < SIZE; k ++)
-		EXPECT_EQ( getElem(buff1, i-2, j-2, k-2, 0), getElem(buff2, i, j, k, 0));
+		ASSERT_EQ( getElem(buff2, i, j, k, 0), getElem(buff2, i-1, j-1, k-1, 1));
+
+	for (auto i = 2; i < SIZE; i ++)
+	for (auto j = 2; j < SIZE; j ++)
+	for (auto k = 2; k < SIZE; k ++)
+		ASSERT_EQ( getElem(buff1, i-2, j-2, k-2, 0), getElem(buff2, i, j, k, 0));
 
 }
 
@@ -270,17 +257,17 @@ TEST(Stencil3D, AVG_3D){
 	BufferSet<Type, 3> buff1 ({SIZE, SIZE, SIZE}, data);
 	BufferSet<Type, 3> buff2 ({SIZE, SIZE, SIZE}, data);
 
-	Avg_3D_k<BufferSet<Type, 3>> kernel;
+	using KernelType = Avg_3D_k<BufferSet<Type, 3>>;
 
 	// Recursive
-	recursive_stencil( buff1, kernel, TIMESTEPS);
+	recursive_stencil<BufferSet<Type, 3>,KernelType>( buff1, TIMESTEPS);
 
 	// iterative
 	for (int t = 0; t < TIMESTEPS; ++t)
 	for (int i = 0; i < SIZE; ++i)
 	for (int j = 0; j < SIZE; ++j)
 	for (int k = 0; k < SIZE; ++k)
-		kernel(buff2, i, j, k, t);
+		KernelType::withBonduaries(buff2, i, j, k, t);
 
 	for (auto i = 1; i < SIZE-1; i ++)
 	for (auto j = 1; j < SIZE-1; j ++)
@@ -305,25 +292,25 @@ TEST(Stencil3D, Heat_3D){
 	BufferSet<Type, 3> recursive ({SIZE, SIZE, SIZE}, data);
 	BufferSet<Type, 3> iterative ({SIZE, SIZE, SIZE}, data);
 
-	Heat_3D_k<BufferSet<Type, 3>> kernel;
+	using KernelType = Heat_3D_k<BufferSet<Type, 3>>;
 
 
 	// Recursive
 	{
-		auto t = time_call(recursive_stencil<BufferSet<Type, 3>, Heat_3D_k<BufferSet<Type, 3>>>, recursive, kernel, TIMESTEPS);
+		auto t = time_call(recursive_stencil<BufferSet<Type, 3>, Heat_3D_k<BufferSet<Type, 3>>>, recursive, TIMESTEPS);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
 	// iterative
 	{
-		auto it = [](BufferSet<Type, 3>& buff, const Heat_3D_k<BufferSet<Type, 3>>& kernel, unsigned timeSteps) {
+		auto it = [](BufferSet<Type, 3>& buff, unsigned timeSteps) {
 			for (int t = 0; t < timeSteps; ++t)
 			for (int i = 0; i < SIZE; ++i)
 			for (int j = 0; j < SIZE; ++j)
 			for (int k = 0; k < SIZE; ++k)
-				kernel(buff, i, j, k, t);
+				KernelType::withBonduaries(buff, i, j, k, t);
 		};
-		auto t = time_call(it, iterative, kernel, TIMESTEPS);
+		auto t = time_call(it, iterative, TIMESTEPS);
 		std::cout << "iterative: " << t << "ms" <<std::endl;
 	}
 
@@ -345,7 +332,7 @@ namespace {
 	template< typename DataStorage> 
 	struct Avg_4D_k : public Kernel<DataStorage, 4, Avg_4D_k<DataStorage>>{
 
-		void operator() (DataStorage& data, int i, int j, int k, int w, unsigned t) const{
+		static void withBonduaries (DataStorage& data, int i, int j, int k, int w, unsigned t){
 
 			double fac = 2.0;
 	
@@ -376,34 +363,34 @@ namespace {
 
 TEST(Stencil4D, AVG_4D){
 
-	typedef double Type;
+	typedef float Type;
 	const int SIZE = 10;
-	const int TIMESTEPS = 10;
+	const int TIMESTEPS = 20;
 
 	auto data  = initData<Type> (SIZE*SIZE*SIZE*SIZE);
 
 	BufferSet<Type, 4> recursive ({SIZE, SIZE, SIZE, SIZE}, data);
 	BufferSet<Type, 4> iterative ({SIZE, SIZE, SIZE, SIZE}, data);
 
-	Avg_4D_k<BufferSet<Type, 4>> kernel;
+	using KernelType = Avg_4D_k<BufferSet<Type, 4>>;
 
 	// Recursive
 	{
-		auto t = time_call(recursive_stencil<BufferSet<Type, 4>, Avg_4D_k<BufferSet<Type, 4>>>, recursive, kernel, TIMESTEPS);
+		auto t = time_call(recursive_stencil<BufferSet<Type, 4>, Avg_4D_k<BufferSet<Type, 4>>>, recursive, TIMESTEPS);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
 	// iterative
 	{
-		auto it = [](BufferSet<Type, 4>& buff, const Avg_4D_k<BufferSet<Type, 4>>& kernel, unsigned timeSteps) {
+		auto it = [](BufferSet<Type, 4>& buff, unsigned timeSteps) {
 			for (int t = 0; t < timeSteps; ++t)
 			for (int i = 0; i < SIZE; ++i)
 			for (int j = 0; j < SIZE; ++j)
 			for (int k = 0; k < SIZE; ++k)
 			for (int w = 0; w < SIZE; ++w)
-				kernel(buff, i, j, k, w, t);
+				KernelType::withBonduaries(buff, i, j, k, w, t);
 		};
-		auto t = time_call(it, iterative, kernel, TIMESTEPS);
+		auto t = time_call(it, iterative, TIMESTEPS);
 		std::cout << "iterative: " << t << "ms" <<std::endl;
 	}
 

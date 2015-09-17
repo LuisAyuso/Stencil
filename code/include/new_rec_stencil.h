@@ -26,10 +26,10 @@ namespace stencil{
 namespace detail {
 
 	#define FOR_DIMENSION(N) \
-	template <typename DataStorage, typename Kernel> \
-			inline typename std::enable_if< is_eq<Kernel::dimensions, N>::value, void>::type
+	template <typename DataStorage, typename KernelType, unsigned Dim> \
+			inline typename std::enable_if< is_eq<Dim, N>::value, void>::type
 
-		FOR_DIMENSION(1) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+		FOR_DIMENSION(1) base_case (DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 			BC_INSTRUMENT(z)
 
@@ -39,7 +39,7 @@ namespace detail {
 			for (int t = t0; t < t1; ++t){
 
 				for (int i = ia; i < ib; ++i){
-						kernel(data, i, t);
+					KernelType::withBonduaries(data, i, t);
 				}
 				ia += z.da(0);
 				ib += z.db(0);
@@ -48,7 +48,7 @@ namespace detail {
 			END_INSTUMENT;
 		}
 
-		FOR_DIMENSION(2) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+		FOR_DIMENSION(2) base_case (DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 			BC_INSTRUMENT(z)
 
@@ -61,7 +61,7 @@ namespace detail {
 
 				for (int j = ja; j < jb; ++j){
 					for (int i = ia; i < ib; ++i){
-						kernel(data, i, j, t);
+						KernelType::withBonduaries(data, i, j, t);
 					}
 				}
 				ia += z.da(0);
@@ -72,7 +72,7 @@ namespace detail {
 			END_INSTUMENT;
 		}
 
-		FOR_DIMENSION(3) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+		FOR_DIMENSION(3) base_case (DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 			BC_INSTRUMENT(z)
 
@@ -88,7 +88,7 @@ namespace detail {
 				for (int k = ka; k < kb; ++k){
 					for (int j = ja; j < jb; ++j){
 						for (int i = ia; i < ib; ++i){
-							kernel(data, i, j, k, t);
+							KernelType::withBonduaries(data, i, j, k, t);
 						}
 					}
 				}
@@ -103,7 +103,7 @@ namespace detail {
 			END_INSTUMENT;
 		}
 
-		FOR_DIMENSION(4) base_case (DataStorage& data, const Kernel& kernel, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+		FOR_DIMENSION(4) base_case (DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 			BC_INSTRUMENT(z)
 
@@ -123,7 +123,7 @@ namespace detail {
 					for (int k = ka; k < kb; ++k){
 						for (int j = ja; j < jb; ++j){
 							for (int i = ia; i < ib; ++i){
-								kernel(data, i, j, k, w, t);
+								KernelType::withBonduaries(data, i, j, k, w, t);
 							}
 						}
 					}
@@ -164,27 +164,27 @@ namespace detail {
 // ~~~~~~~~~~~~~~~~ multiple splits routine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_A(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1);
+	inline void recursive_stencil_A(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1);
 
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_B(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1);
+	inline void recursive_stencil_B(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1);
 
 	// When changing dimension, it is important to see what geometry the hyperspace has, to use the appropiate recursive call
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_dispatch(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_dispatch(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 		const auto da = z.da(Dim);
 		const auto db = z.db(Dim);
 		if (da < db) {
-			recursive_stencil_B<DataStorage, Kernel, Dim> (data, k, z, t0, t1);
+			recursive_stencil_B<DataStorage, Kernel, Dim> (data, z, t0, t1);
 		}
 		else{
-			recursive_stencil_A<DataStorage, Kernel, Dim> (data, k, z, t0, t1);
+			recursive_stencil_A<DataStorage, Kernel, Dim> (data, z, t0, t1);
 		}
 	}
 
 	// This function handles hyperspaces with wider base
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_A(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_A(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 		constexpr auto NextDim = next_dim<Dim, Target_Hyperspace::dimensions>::value;
@@ -212,14 +212,14 @@ namespace detail {
 			const auto cut = (deltaBase /2);
 			const auto& subSpaces  = Target_Hyperspace::template split_M2<Dim, neighbours> (a+cut, z);
 
-			SPAWN ( left, (recursive_stencil_A<DataStorage, Kernel, Dim>), data, k, subSpaces[0], t0, t1);
-			recursive_stencil_A<DataStorage, Kernel, Dim>( data, k, subSpaces[1], t0, t1);
+			SPAWN ( left, (recursive_stencil_A<DataStorage, Kernel, Dim>), data, subSpaces[0], t0, t1);
+			recursive_stencil_A<DataStorage, Kernel, Dim>( data, subSpaces[1], t0, t1);
 			SYNC(left);
 
-			recursive_stencil_B<DataStorage, Kernel, Dim>( data, k, subSpaces[2], t0, t1);
+			recursive_stencil_B<DataStorage, Kernel, Dim>( data, subSpaces[2], t0, t1);
 		}
 		else if (Dim != 0){
-			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, k, z, t0, t1);
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, z, t0, t1);
 		}
 		// time cut
 		else if (deltaT > TIME_CUTOFF){
@@ -228,7 +228,7 @@ namespace detail {
 			assert(halfTime >= 1);
 			//std::cout << " time cut " << "(" << t0 << "," << halfTime+t0 << "](" << halfTime+t0 << "," << t1 << "]" << std::endl;
 
-			recursive_stencil_A <DataStorage, Kernel, Dim>(data, k, z, t0, t0+halfTime);
+			recursive_stencil_A <DataStorage, Kernel, Dim>(data, z, t0, t0+halfTime);
 
 			// We must update all the dimensions as we move in time.... 
 			auto upZoid = z;
@@ -238,18 +238,18 @@ namespace detail {
 			}
 			//upZoid.increaseStep();
 
-			recursive_stencil_A<DataStorage, Kernel, Dim>(data, k, upZoid, t0+halfTime, t1);
+			recursive_stencil_A<DataStorage, Kernel, Dim>(data, upZoid, t0+halfTime, t1);
 		}
 		else{
 			//std::cout << " Base Case: " << z << std::endl;
-			base_case (data, k, z, t0, t1);
+			base_case<DataStorage, Kernel, Target_Hyperspace::dimensions> (data, z, t0, t1);
 		}
 	}
 
 
 	// This function handles hyperspaces with wider top (inverted pyramid)
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_B(DataStorage& data, const Kernel& k, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_B(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 		constexpr auto NextDim = next_dim<Dim, Target_Hyperspace::dimensions>::value;
@@ -274,15 +274,15 @@ namespace detail {
 			const auto& subSpaces  = Target_Hyperspace::template split_W2<Dim, neighbours> (z);
 			assert(subSpaces.size() == 3);
 
-			recursive_stencil_A<DataStorage, Kernel, Dim> (data, k, subSpaces[0], t0, t1);
+			recursive_stencil_A<DataStorage, Kernel, Dim> (data, subSpaces[0], t0, t1);
 
-			SPAWN ( left, (recursive_stencil_B<DataStorage, Kernel, Dim>), data, k, subSpaces[1], t0, t1);
-			recursive_stencil_B<DataStorage, Kernel, Dim>( data, k, subSpaces[2], t0, t1);
+			SPAWN ( left, (recursive_stencil_B<DataStorage, Kernel, Dim>), data, subSpaces[1], t0, t1);
+			recursive_stencil_B<DataStorage, Kernel, Dim>( data, subSpaces[2], t0, t1);
 			SYNC(left);
 
 		}
 		else if (Dim != 0){
-			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, k, z, t0, t1);
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, z, t0, t1);
 		}
 		// time cut
 		else if (deltaT > TIME_CUTOFF){
@@ -293,7 +293,7 @@ namespace detail {
 			assert(halfTime >= 1 && halfTime < deltaT);
 
 			//std::cout << " time cut " << "(" << t0 << "," << halfTime+t0 << "](" << halfTime+t0 << "," << t1 << "]" << std::endl;
-			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, k, z, t0, t0+halfTime);
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, z, t0, t0+halfTime);
 
 			// We must update all the dimensions as we move in time.... 
 			auto upZoid = z;
@@ -303,12 +303,13 @@ namespace detail {
 			}
 			//upZoid.increaseStep();
 
-			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, k, upZoid, t0+halfTime, t1);
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, upZoid, t0+halfTime, t1);
 		}
 		else {
 
 			//std::cout << "BASECASE: " << z << " t(" << t0 << "," << t1 << ") " << std::endl;
-			base_case (data, k, z, t0, t1);
+			//base_case<Target_Hyperspace,Kernel> (data, z, t0, t1);
+			base_case<DataStorage, Kernel, Target_Hyperspace::dimensions> (data, z, t0, t1);
 		}
 	}
 
@@ -318,14 +319,14 @@ namespace detail {
 // ~~~~~~~~~~~~~~~~ Recursive stencil entry point  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	template <typename DataStorage, typename Kernel>
-	void recursive_stencil(DataStorage& data, const Kernel& k, unsigned t){
+	void recursive_stencil(DataStorage& data, unsigned t){
 
 		PARALLEL_CTX ({
 
 			// notice that the original piramid has perfect vertical sides
 			auto z = data.getGlobalHyperspace();
 
-			(detail::recursive_stencil_A<DataStorage, Kernel, Kernel::dimensions-1>)(data, k, z, 0, t);
+			(detail::recursive_stencil_A<DataStorage, Kernel, Kernel::dimensions-1>)(data, z, 0, t);
 
 		});
 	}

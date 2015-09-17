@@ -110,11 +110,9 @@ int main(int argc, char *argv[]) {
 	
 	using KernelType = example_kernels::Avg_1D_k<ImageSpace>;
 
-	KernelType kernel;
-
 	// ~~~~~~~~~~~~~~~~ RUN ~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if (REC || ALL){
-		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, kernel, timeSteps);
+		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, timeSteps);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
@@ -124,7 +122,7 @@ int main(int argc, char *argv[]) {
 				P_FOR ( i, 0, getW(iteBuffer), 1, {
 
 					LOOP_INSTRUMENT(i, t);
-					kernel(iteBuffer, i, t);
+					KernelType::withBonduaries(iteBuffer, i, t);
 					END_INSTUMENT;
 				});
 			}

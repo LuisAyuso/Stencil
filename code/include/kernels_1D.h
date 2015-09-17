@@ -15,7 +15,7 @@ namespace example_kernels{
 		template< typename DataStorage> 
 		struct Avg_1D_k : public Kernel<DataStorage, 1, Avg_1D_k<DataStorage>>{
 
-			void operator() (DataStorage& data, int i, int t) const{
+			static void withBonduaries (DataStorage& data, int i, int t) {
 
 				auto left  = i>0? getElem(data, i, t%2): 0;
 				auto me    = getElem(data, i, t%2);

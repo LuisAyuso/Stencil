@@ -148,11 +148,9 @@ int main(int argc, char *argv[]) {
 	
 	using KernelType = example_kernels::Avg_3D_k<ImageSpace>;
 
-	KernelType kernel;
-
 	// ~~~~~~~~~~~~~~~~ RUN ~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if (REC || ALL){
-		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, kernel, timeSteps);
+		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, timeSteps);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
@@ -163,7 +161,7 @@ int main(int argc, char *argv[]) {
 					LOOP_INSTRUMENT(i, t);
 		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
 		 				for (unsigned k = 0; k < getD(iteBuffer); ++k){
-							kernel(iteBuffer, i, j, k, t);
+							KernelType::withBonduaries(iteBuffer, i, j, k, t);
 						}
 					}
 					END_INSTUMENT;
@@ -182,7 +180,7 @@ int main(int argc, char *argv[]) {
 					LOOP_INSTRUMENT(k, t);
 					for (unsigned j = 0; j < getH(iteBuffer); ++j){
 						for (unsigned i = 0; i < getW(iteBuffer); ++i){
-							kernel(invBuffer, i, j, k, t);
+							KernelType::withBonduaries(invBuffer, i, j, k, t);
 						}
 					}
 					END_INSTUMENT;

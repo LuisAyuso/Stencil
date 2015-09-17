@@ -21,9 +21,6 @@ namespace stencil{
 	struct Kernel{
 
 		static const unsigned dimensions = Dimensions;
-
-	private:
-		static const unsigned size = sizeof(Parent);
 	};
 
 
@@ -32,19 +29,15 @@ namespace stencil{
 			inline typename std::enable_if< is_eq<Kernel::dimensions, N>::value, void>::type
 
 		FOR_DIMENSION(1)  solve (DataStorage& data, int x, int t){
-			static_assert(Kernel::size ==1 , "Kernel class must not have fields");
 		}
 
 		FOR_DIMENSION(2)  solve (DataStorage& data, int x, int y, int t){
-			static_assert(Kernel::size ==1 , "Kernel class must not have fields");
 		}
 
 		FOR_DIMENSION(3)  solve (DataStorage& data, int x, int y, int z, int t){
-			static_assert(Kernel::size ==1 , "Kernel class must not have fields");
 		}
 
 		FOR_DIMENSION(4)  solve (DataStorage& data, int x, int y, int z, int w, int t){
-			static_assert(Kernel::size ==1 , "Kernel class must not have fields");
 		}
 
 	#undef FOR_DIMENSION

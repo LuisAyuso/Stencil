@@ -15,15 +15,11 @@ namespace example_kernels{
 		template< typename DataStorage> 
 		struct Copy_k : public Kernel<DataStorage, 2, Copy_k<DataStorage>>{
 
-			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
+			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t){
 
 				auto pix = getElem(data, i, j, 0);
 				getElem(data, i, j, 1) = pix;
 			}
-
-			//inline std::pair<int,int> getSlope(unsigned dimension) const{
-			//	return {1,-1};
-			//}
 
 			static const unsigned int neighbours = 1;
 		};
@@ -33,7 +29,7 @@ namespace example_kernels{
 		template< typename DataStorage> 
 		struct Life_k : public Kernel<DataStorage, 2, Life_k<DataStorage>>{
 
-			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
+			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
 
 				unsigned sum = 0;
 				for (unsigned x = MAX(0, ((int)i)-1); x < MIN(getW(data), i+1); ++x){
@@ -51,9 +47,6 @@ namespace example_kernels{
 				}
 			}
 
-			//inline std::pair<int,int> getSlope(unsigned dimension) const{
-			//	return {1,-1};
-			//}
 			static const unsigned int neighbours = 1;
 		};
 
@@ -62,18 +55,10 @@ namespace example_kernels{
 		template< typename DataStorage> 
 		struct Color_k : public Kernel<DataStorage, 2, Color_k<DataStorage>>{
 
-			typename DataStorage::ElementType maxValue;
-
-			Color_k ( typename DataStorage::ElementType maxValue) : maxValue(maxValue) {}
-
-			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
-				getElem(data, i, j, t+1) = t%maxValue;
+			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
+				getElem(data, i, j, t+1) = t%std::numeric_limits<typename DataStorage::ElementType>::max();
 			}
 
-			//inline std::pair<int,int> getSlope(unsigned dimension) const{
-			//	return {1,-1};
-			//}
-			
 			static const unsigned int neighbours = 1;
 		};
 
@@ -84,7 +69,7 @@ namespace example_kernels{
 
 			static const float Kcoeff[3][3];
 
-			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
+			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
@@ -103,9 +88,6 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			//inline std::pair<int,int> getSlope(unsigned dimension) const{
-			//	return {1,-1};
-			//}
 			static const unsigned int neighbours = 1;
 		};
 
@@ -119,7 +101,7 @@ namespace example_kernels{
 
 			static const float Kcoeff[5][5];
 
-			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
+			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
@@ -138,9 +120,6 @@ namespace example_kernels{
 				getElem(data, i, j, t+1) = sum;
 			}
 
-			//inline std::pair<int,int> getSlope(unsigned dimension) const{
-			//	return {2,-2};
-			//}
 			static const unsigned int neighbours = 2;
 		};
 
@@ -155,92 +134,91 @@ namespace example_kernels{
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-
-
-		/**
-		 * a generic  gaussian blur kernel:
-		 * http://stackoverflow.com/questions/8204645/implementing-gaussian-blur-how-to-calculate-convolution-matrix-kernel
-		 */
-		template< typename DataStorage, unsigned Size> 
-		struct BlurN_k : public Kernel<DataStorage, 2, BlurN_k<DataStorage, Size>>{
-
-			static const unsigned int neighbours = (Size-1)>>1;
-
-			float Kcoeff[Size][Size];
-
-			double gaussian (double x, double mu, double sigma) const {
-			  return exp( -(((x-mu)/(sigma))*((x-mu)/(sigma)))/2.0 );
-			}
-
-			BlurN_k () {
-				assert(Size%2 == 1);
-
-
-				int halfSize = Size/2;
-			
-				// determine sigma
-				double sigma = Size/2.0;
-
-				// fill values
-				double sum = 0;
-				for (int row = 0; row < Size; row++){
-					for (int col = 0; col < Size; col++) {
-
-						int i = row<=halfSize? row: Size-(row+1);
-						int j = col<=halfSize? col: Size-(col+1);
-
-						Kcoeff[row][col] = gaussian(i, Size, sigma) * gaussian(j, Size, sigma);
-						sum += Kcoeff[row][col];
-					}
-				}
-
-				//		  // normalize
-				for (int row = 0; row < Size; row++){
-					for (int col = 0; col < Size; col++){
-						Kcoeff[row][col] /= sum;
-					}
-				}
-
-			}
-
-			void operator() (DataStorage& data, unsigned i, unsigned j, unsigned t) const{
-
-				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
-				double sum = 0.0;
-
-				assert(i < getW(data));
-				assert(j < getH(data));
-
-				auto xMin = i;
-				for (int v = 1; v <= neighbours; ++v) xMin = MAX(0, ((int)i)-v);
-				auto xMax = i;
-				for (int v = 1; v <= neighbours; ++v) xMax = MIN(getW(data)-1, i+v);
-		
-				auto yMin = j;
-				for (int v = 1; v <= neighbours; ++v) yMin = MAX(0, ((int)j)-v);
-				auto yMax = j;
-				for (int v = 1; v <= neighbours; ++v) yMax = MIN(getH(data)-1, j+v);
-
-				for (unsigned x = xMin; x <= xMax; ++x){
-					for (unsigned y = yMin; y <= yMax; ++y){	
-						
-							// this is quite not right, this offset might produce weird values 
-							// on bonduaries, but results are uniform
-						int ki =  x-i+neighbours;
-						int kj =  y-j+neighbours;
-
-						auto e = getElem(data, x, y, t);
-						sum += e * Kcoeff[ki][kj];
-					}
-				}
-				
-				getElem(data, i, j, t+1) = sum;
-			}
-
-			//inline std::pair<int,int> getSlope(unsigned dimension) const{
-			//	return {slope,-slope};
-			//}
-		};
+//		/**
+//		 * a generic  gaussian blur kernel:
+//		 * http://stackoverflow.com/questions/8204645/implementing-gaussian-blur-how-to-calculate-convolution-matrix-kernel
+//		 */
+//		template< typename DataStorage, unsigned Size> 
+//		struct BlurN_k : public Kernel<DataStorage, 2, BlurN_k<DataStorage, Size>>{
+//
+//			static const unsigned int neighbours = (Size-1)>>1;
+//
+//			static float Kcoeff[Size][Size];
+//
+//			static double gaussian (double x, double mu, double sigma)  {
+//			  return exp( -(((x-mu)/(sigma))*((x-mu)/(sigma)))/2.0 );
+//			}
+//
+//			static constexpr int initialize () {
+//				assert(Size%2 == 1);
+//
+//
+//				int halfSize = Size/2;
+//			
+//				// determine sigma
+//				double sigma = Size/2.0;
+//
+//				// fill values
+//				double sum = 0;
+//				for (int row = 0; row < Size; row++){
+//					for (int col = 0; col < Size; col++) {
+//
+//						int i = row<=halfSize? row: Size-(row+1);
+//						int j = col<=halfSize? col: Size-(col+1);
+//
+//						Kcoeff[row][col] = gaussian(i, Size, sigma) * gaussian(j, Size, sigma);
+//						sum += Kcoeff[row][col];
+//					}
+//				}
+//
+//				//		  // normalize
+//				for (int row = 0; row < Size; row++){
+//					for (int col = 0; col < Size; col++){
+//						Kcoeff[row][col] /= sum;
+//					}
+//				}
+//
+//			}
+//			static const int init = initialize();
+//
+//			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
+//
+//				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
+//				double sum = 0.0;
+//
+//				assert(i < getW(data));
+//				assert(j < getH(data));
+//
+//				auto xMin = i;
+//				for (int v = 1; v <= neighbours; ++v) xMin = MAX(0, ((int)i)-v);
+//				auto xMax = i;
+//				for (int v = 1; v <= neighbours; ++v) xMax = MIN(getW(data)-1, i+v);
+//		
+//				auto yMin = j;
+//				for (int v = 1; v <= neighbours; ++v) yMin = MAX(0, ((int)j)-v);
+//				auto yMax = j;
+//				for (int v = 1; v <= neighbours; ++v) yMax = MIN(getH(data)-1, j+v);
+//
+//				for (unsigned x = xMin; x <= xMax; ++x){
+//					for (unsigned y = yMin; y <= yMax; ++y){	
+//						
+//							// this is quite not right, this offset might produce weird values 
+//							// on bonduaries, but results are uniform
+//						int ki =  x-i+neighbours;
+//						int kj =  y-j+neighbours;
+//
+//						auto e = getElem(data, x, y, t);
+//						sum += e * Kcoeff[ki][kj];
+//					}
+//				}
+//				
+//				getElem(data, i, j, t+1) = sum;
+//			}
+//
+//		};
+//
+//		template< typename DataStorage, unsigned Size> 
+//		float BlurN_k<DataStorage, Size>::Kcoeff[Size][Size];
 
 }// example_kernels
 }// stencil
