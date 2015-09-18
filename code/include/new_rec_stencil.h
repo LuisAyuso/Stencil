@@ -26,7 +26,7 @@ namespace stencil{
 namespace detail {
 
 	#define FOR_DIMENSION(N) \
-	template <typename DataStorage, typename KernelType, unsigned Dim> \
+	template <typename DataStorage, typename KernelType, unsigned Dim, bool WithBounds=true> \
 			inline typename std::enable_if< is_eq<Dim, N>::value, void>::type
 
 		FOR_DIMENSION(1) base_case (DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
@@ -39,7 +39,7 @@ namespace detail {
 			for (int t = t0; t < t1; ++t){
 
 				for (int i = ia; i < ib; ++i){
-					KernelType::withBonduaries(data, i, t);
+					solve<WithBounds, KernelType, DataStorage> (data, i, t);
 				}
 				ia += z.da(0);
 				ib += z.db(0);
@@ -61,7 +61,7 @@ namespace detail {
 
 				for (int j = ja; j < jb; ++j){
 					for (int i = ia; i < ib; ++i){
-						KernelType::withBonduaries(data, i, j, t);
+						solve<WithBounds, KernelType, DataStorage> (data, i, j, t);
 					}
 				}
 				ia += z.da(0);
@@ -88,7 +88,7 @@ namespace detail {
 				for (int k = ka; k < kb; ++k){
 					for (int j = ja; j < jb; ++j){
 						for (int i = ia; i < ib; ++i){
-							KernelType::withBonduaries(data, i, j, k, t);
+							solve<WithBounds, KernelType, DataStorage> (data, i, j, k, t);
 						}
 					}
 				}
@@ -123,7 +123,7 @@ namespace detail {
 					for (int k = ka; k < kb; ++k){
 						for (int j = ja; j < jb; ++j){
 							for (int i = ia; i < ib; ++i){
-								KernelType::withBonduaries(data, i, j, k, w, t);
+								solve<WithBounds, KernelType, DataStorage> (data, i, j, k, w, t);
 							}
 						}
 					}
@@ -163,33 +163,38 @@ namespace detail {
 
 // ~~~~~~~~~~~~~~~~ multiple splits routine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_A(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1);
+#define REMOVE_BOUND(x) x&(~(1<<Dim))
+	typedef unsigned char Bound_flags;
+
 
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_B(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1);
+	inline void recursive_stencil_A(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1, Bound_flags leftB, Bound_flags rightB);
+
+	template <typename DataStorage, typename Kernel, int Dim>
+	inline void recursive_stencil_B(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1, Bound_flags leftB, Bound_flags rightB);
 
 	// When changing dimension, it is important to see what geometry the hyperspace has, to use the appropiate recursive call
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_dispatch(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_dispatch(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1, Bound_flags leftB, Bound_flags rightB){
 		const auto da = z.da(Dim);
 		const auto db = z.db(Dim);
-		if (da < db) {
-			recursive_stencil_B<DataStorage, Kernel, Dim> (data, z, t0, t1);
+
+		if (da <= db) {
+			recursive_stencil_B<DataStorage, Kernel, Dim> (data, z, t0, t1, leftB, rightB);
 		}
 		else{
-			recursive_stencil_A<DataStorage, Kernel, Dim> (data, z, t0, t1);
+			recursive_stencil_A<DataStorage, Kernel, Dim> (data, z, t0, t1, leftB, rightB);
 		}
 	}
 
-	// This function handles hyperspaces with wider base
+	// This function handles hyperspaces with flat bonduaries, is the entry point.
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_A(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_Z(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1, Bound_flags leftB, Bound_flags rightB){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 		constexpr auto NextDim = next_dim<Dim, Target_Hyperspace::dimensions>::value;
 
-		//std::cout << "A-" << z << " t(" << t0 << "," << t1 << ") DIM:" << Dim << std::endl;
+		//std::cout << "Z-" << z << " t(" << t0 << "," << t1 << ") d" << Dim << " lB" << (int)leftB << " rB" << (int)rightB << std::endl;
 
 		const auto deltaT = t1-t0;
 		const auto a  = z.a(Dim);
@@ -198,28 +203,24 @@ namespace detail {
 		const auto db = z.db(Dim);
 		const auto deltaBase = b - a;
 		const auto neighbours = Kernel::neighbours;
-		assert(da >= db);
-
-	 //std::cout << "         deltaT: "   <<  deltaT  << std::endl;
-     //std::cout << "         a: "        <<  a   << std::endl;
-     //std::cout << "         b: "        <<  b   << std::endl;
-     //std::cout << "         da: "       <<  da  << std::endl;
-     //std::cout << "         db: "       <<  db  << std::endl;
-     //std::cout << "         deltaBase: "<<  deltaBase << std::endl;
+		assert(da == db);
 
 		// spatial cut (this case cuts in M)
-		if (deltaBase >= 2*2*neighbours*deltaT){
+		if (deltaBase >= 2*neighbours*deltaT){
+
 			const auto cut = (deltaBase /2);
+			//std::cout << " cut in M @" << cut << std::endl;
 			const auto& subSpaces  = Target_Hyperspace::template split_M2<Dim, neighbours> (a+cut, z);
 
-			SPAWN ( left, (recursive_stencil_A<DataStorage, Kernel, Dim>), data, subSpaces[0], t0, t1);
-			recursive_stencil_A<DataStorage, Kernel, Dim>( data, subSpaces[1], t0, t1);
+			//std::cout << "   			- " << subSpaces[0] << std::endl;
+			//std::cout << "   			- " << subSpaces[1] << std::endl;
+			//std::cout << "   			- " << subSpaces[2] << std::endl;
+
+			SPAWN ( left, (recursive_stencil_A<DataStorage, Kernel, Dim>), data, subSpaces[0], t0, t1, leftB, REMOVE_BOUND(leftB));
+			recursive_stencil_A<DataStorage, Kernel, Dim>( data, subSpaces[1], t0, t1, REMOVE_BOUND(leftB), rightB);
 			SYNC(left);
 
-			recursive_stencil_B<DataStorage, Kernel, Dim>( data, subSpaces[2], t0, t1);
-		}
-		else if (Dim != 0){
-			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, z, t0, t1);
+			recursive_stencil_B<DataStorage, Kernel, Dim>( data, subSpaces[2], t0, t1, leftB, rightB);
 		}
 		// time cut
 		else if (deltaT > TIME_CUTOFF){
@@ -228,7 +229,7 @@ namespace detail {
 			assert(halfTime >= 1);
 			//std::cout << " time cut " << "(" << t0 << "," << halfTime+t0 << "](" << halfTime+t0 << "," << t1 << "]" << std::endl;
 
-			recursive_stencil_A <DataStorage, Kernel, Dim>(data, z, t0, t0+halfTime);
+			recursive_stencil_Z <DataStorage, Kernel, NextDim>(data, z, t0, t0+halfTime, leftB, rightB);
 
 			// We must update all the dimensions as we move in time.... 
 			auto upZoid = z;
@@ -236,25 +237,24 @@ namespace detail {
 				upZoid.a(d) = z.a(d) + z.da(d)*halfTime;
 				upZoid.b(d) = z.b(d) + z.db(d)*halfTime;
 			}
-			//upZoid.increaseStep();
 
-			recursive_stencil_A<DataStorage, Kernel, Dim>(data, upZoid, t0+halfTime, t1);
+			recursive_stencil_Z<DataStorage, Kernel, NextDim>(data, upZoid, t0+halfTime, t1, leftB, rightB);
 		}
 		else{
-			//std::cout << " Base Case: " << z << std::endl;
-			base_case<DataStorage, Kernel, Target_Hyperspace::dimensions> (data, z, t0, t1);
+			//std::cout << "					BASECASE: " << z << " t(" << t0 << "," << t1 << ") lB" << (int)leftB << " rB" << (int)rightB  << std::endl;
+			base_case<DataStorage, Kernel, Target_Hyperspace::dimensions, true> (data, z, t0, t1);
 		}
 	}
 
 
-	// This function handles hyperspaces with wider top (inverted pyramid)
+	// This function handles hyperspaces with wider base
 	template <typename DataStorage, typename Kernel, int Dim>
-	inline void recursive_stencil_B(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1){
+	inline void recursive_stencil_A(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1, Bound_flags leftB, Bound_flags rightB){
 
 		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
 		constexpr auto NextDim = next_dim<Dim, Target_Hyperspace::dimensions>::value;
 
-		//std::cout << "B-" << z << " t(" << t0 << "," << t1 << ") " << Dim << std::endl;
+		//std::cout << "A-" << z << " t(" << t0 << "," << t1 << ") d" << Dim << " lB" << (int)leftB << " rB" << (int)rightB << std::endl;
 
 		const auto deltaT = t1-t0;
 		const auto a  = z.a(Dim);
@@ -262,10 +262,71 @@ namespace detail {
 		const auto da = z.da(Dim);
 		const auto db = z.db(Dim);
 		const auto deltaBase = b - a;
+		const auto neighbours = Kernel::neighbours;
+		assert(da > db);
+
+		// spatial cut (this case cuts in M)
+		if (deltaBase >= 2*2*neighbours*deltaT){
+			const auto cut = (deltaBase /2);
+			//std::cout << " cut in M @" << cut << std::endl;
+			const auto& subSpaces  = Target_Hyperspace::template split_M2<Dim, neighbours> (a+cut, z);
+
+			//std::cout << "   			- " << subSpaces[0] << std::endl;
+			//std::cout << "   			- " << subSpaces[1] << std::endl;
+			//std::cout << "   			- " << subSpaces[2] << std::endl;
+
+			SPAWN ( left, (recursive_stencil_A<DataStorage, Kernel, Dim>), data, subSpaces[0], t0, t1, leftB, db==0? rightB: REMOVE_BOUND(rightB));
+			recursive_stencil_A<DataStorage, Kernel, Dim>( data, subSpaces[1], t0, t1, da==0? leftB: REMOVE_BOUND(leftB), rightB);
+			SYNC(left);
+
+			recursive_stencil_B<DataStorage, Kernel, Dim>( data, subSpaces[2], t0, t1, da==0? leftB: REMOVE_BOUND(leftB), db==0? rightB: REMOVE_BOUND(rightB));
+		}
+		else if (Dim != 0){
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, z, t0, t1, leftB, rightB);
+		}
+		// time cut
+		else if (deltaT > TIME_CUTOFF){
+
+			const int halfTime = deltaT/2;
+			assert(halfTime >= 1);
+			//std::cout << " time cut " << halfTime << "(" << t0 << "," << halfTime+t0 << "](" << halfTime+t0 << "," << t1 << "]" << std::endl;
+
+			recursive_stencil_dispatch <DataStorage, Kernel, Dim>(data, z, t0, t0+halfTime, leftB, rightB);
+
+			// We must update all the dimensions as we move in time.... 
+			auto upZoid = z;
+			for (auto d = 0; d < z.dimensions; ++d){
+				upZoid.a(d) = z.a(d) + z.da(d)*halfTime;
+				upZoid.b(d) = z.b(d) + z.db(d)*halfTime;
+			}
+
+			recursive_stencil_dispatch<DataStorage, Kernel, Dim>(data, upZoid, t0+halfTime, t1, da==0? leftB: REMOVE_BOUND(leftB) , db==0? rightB: REMOVE_BOUND(rightB));
+		}
+		else{
+			//std::cout << "					BASECASE: " << z << " t(" << t0 << "," << t1 << ") lB" << (int)leftB << " rB" << (int)rightB  << std::endl;
+			if( leftB + rightB == 0) base_case<DataStorage, Kernel, Target_Hyperspace::dimensions, false> (data, z, t0, t1);
+			else 					 base_case<DataStorage, Kernel, Target_Hyperspace::dimensions, true> (data, z, t0, t1);
+		}
+	}
+
+	// This function handles hyperspaces with wider top (inverted pyramid)
+	template <typename DataStorage, typename Kernel, int Dim>
+	inline void recursive_stencil_B(DataStorage& data, const Hyperspace<DataStorage::dimensions>& z, int t0, int t1, Bound_flags leftB, Bound_flags rightB){
+
+		typedef Hyperspace<DataStorage::dimensions> Target_Hyperspace;
+		constexpr auto NextDim = next_dim<Dim, Target_Hyperspace::dimensions>::value;
+
+		//std::cout << "B-" << z << " t(" << t0 << "," << t1 << ") d" << Dim << " lB" << (int)leftB << " rB" << (int)rightB << std::endl;
+
+		const auto deltaT = t1-t0;
+		const auto a  = z.a(Dim);
+		const auto b  = z.b(Dim);
+		const auto da = z.da(Dim);
+		const auto db = z.db(Dim);
 		const auto deltaTop = (b + db * deltaT) - (a + da * deltaT);
 		const auto neighbours = Kernel::neighbours;
 
-		assert(da < db);
+		assert(da <= db);
 		
 		// spatial cut (this case cuts in W)
 		if (deltaTop >= 2*2*neighbours*deltaT){
@@ -274,26 +335,30 @@ namespace detail {
 			const auto& subSpaces  = Target_Hyperspace::template split_W2<Dim, neighbours> (z);
 			assert(subSpaces.size() == 3);
 
-			recursive_stencil_A<DataStorage, Kernel, Dim> (data, subSpaces[0], t0, t1);
+			//std::cout << "   			- " << subSpaces[0] << std::endl;
+			//std::cout << "   			- " << subSpaces[1] << std::endl;
+			//std::cout << "   			- " << subSpaces[2] << std::endl;
 
-			SPAWN ( left, (recursive_stencil_B<DataStorage, Kernel, Dim>), data, subSpaces[1], t0, t1);
-			recursive_stencil_B<DataStorage, Kernel, Dim>( data, subSpaces[2], t0, t1);
+			recursive_stencil_A<DataStorage, Kernel, Dim> (data, subSpaces[0], t0, t1, da==0? leftB: REMOVE_BOUND(leftB) , db==0? rightB: REMOVE_BOUND(rightB));
+
+			SPAWN ( left, (recursive_stencil_B<DataStorage, Kernel, Dim>), data, subSpaces[1], t0, t1, leftB, db==0? rightB: REMOVE_BOUND(rightB));
+			recursive_stencil_B<DataStorage, Kernel, Dim>( data, subSpaces[2], t0, t1, da==0? leftB: REMOVE_BOUND(leftB), rightB );
 			SYNC(left);
 
 		}
 		else if (Dim != 0){
-			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, z, t0, t1);
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>( data, z, t0, t1, leftB, rightB);
 		}
 		// time cut
 		else if (deltaT > TIME_CUTOFF){
 
-			// little optimization, if the base of the hyp in this dimmension is 0, we can skip it and improve spatial cut chances by shifting the piramid
-			// by one
-			const int halfTime = (a!=b) ? deltaT>>2 : (deltaT>>2)+1;
+			// little optimization, if the base of the hyp in this dimmension is 0, 
+			// we can skip it and improve spatial cut chances by shifting the piramid  by one
+			const int halfTime = (a!=b) ?  deltaT>>1 : (deltaT>>1)+1;
 			assert(halfTime >= 1 && halfTime < deltaT);
 
-			//std::cout << " time cut " << "(" << t0 << "," << halfTime+t0 << "](" << halfTime+t0 << "," << t1 << "]" << std::endl;
-			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, z, t0, t0+halfTime);
+			//std::cout << " time cut " << halfTime << "(" << t0 << "," << halfTime+t0 << "](" << halfTime+t0 << "," << t1 << "]" << std::endl;
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, z, t0, t0+halfTime, da==0? leftB: REMOVE_BOUND(leftB) , db==0? rightB: REMOVE_BOUND(rightB));
 
 			// We must update all the dimensions as we move in time.... 
 			auto upZoid = z;
@@ -301,15 +366,13 @@ namespace detail {
 				upZoid.a(d) = z.a(d) + z.da(d)*halfTime;
 				upZoid.b(d) = z.b(d) + z.db(d)*halfTime;
 			}
-			//upZoid.increaseStep();
 
-			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, upZoid, t0+halfTime, t1);
+			recursive_stencil_dispatch<DataStorage, Kernel, NextDim>(data, upZoid, t0+halfTime, t1, leftB, rightB);
 		}
 		else {
-
-			//std::cout << "BASECASE: " << z << " t(" << t0 << "," << t1 << ") " << std::endl;
-			//base_case<Target_Hyperspace,Kernel> (data, z, t0, t1);
-			base_case<DataStorage, Kernel, Target_Hyperspace::dimensions> (data, z, t0, t1);
+			//std::cout << "					BASECASE: " << z << " t(" << t0 << "," << t1 << ") lB" << (int)leftB << " rB" << (int)rightB  << std::endl;
+			if( leftB + rightB == 0) base_case<DataStorage, Kernel, Target_Hyperspace::dimensions, false> (data, z, t0, t1);
+			else 					 base_case<DataStorage, Kernel, Target_Hyperspace::dimensions, true> (data, z, t0, t1);
 		}
 	}
 
@@ -321,12 +384,20 @@ namespace detail {
 	template <typename DataStorage, typename Kernel>
 	void recursive_stencil(DataStorage& data, unsigned t){
 
+		// 7 (111) is all flags saying that touch the border
+		unsigned char allDims = 1;
+		for (int i =1; i < Kernel::dimensions; i++){
+			allDims <<=1;
+			allDims += 1;
+		}
+
 		PARALLEL_CTX ({
 
 			// notice that the original piramid has perfect vertical sides
 			auto z = data.getGlobalHyperspace();
 
-			(detail::recursive_stencil_A<DataStorage, Kernel, Kernel::dimensions-1>)(data, z, 0, t);
+
+			(detail::recursive_stencil_Z<DataStorage, Kernel, Kernel::dimensions-1>)(data, z, 0, t, allDims, allDims);
 
 		});
 	}

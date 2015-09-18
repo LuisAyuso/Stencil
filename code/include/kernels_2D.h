@@ -16,7 +16,10 @@ namespace example_kernels{
 		struct Copy_k : public Kernel<DataStorage, 2, Copy_k<DataStorage>>{
 
 			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t){
-
+				auto pix = getElem(data, i, j, 0);
+				getElem(data, i, j, 1) = pix;
+			}
+			static void withoutBonduaries (DataStorage& data, int i, int j, int t){
 				auto pix = getElem(data, i, j, 0);
 				getElem(data, i, j, 1) = pix;
 			}
@@ -29,7 +32,7 @@ namespace example_kernels{
 		template< typename DataStorage> 
 		struct Life_k : public Kernel<DataStorage, 2, Life_k<DataStorage>>{
 
-			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
+			static void withBonduaries (DataStorage& data, int i, int j, int t) {
 
 				unsigned sum = 0;
 				for (unsigned x = MAX(0, ((int)i)-1); x < MIN(getW(data), i+1); ++x){
@@ -47,6 +50,25 @@ namespace example_kernels{
 				}
 			}
 
+			static void withoutBonduaries (DataStorage& data, int i, int j, int t) {
+
+				unsigned sum = 0;
+				for (unsigned x = i-1; x < i+1; ++x){
+					for (unsigned y = j-1; y < j+1; ++y){	
+
+						sum += (getElem(data, x, y, t) > 125)? 1 : 0;
+					}
+				}
+				
+				if (getElem(data, i, j, t) < 128) {
+					getElem(data, i, j, t+1) = sum == 3? 255: 0;
+				}
+				else{
+					getElem(data, i, j, t+1) = sum > 3? 0: (sum<2)? 0: 255;
+				}
+			}
+
+
 			static const unsigned int neighbours = 1;
 		};
 
@@ -55,7 +77,10 @@ namespace example_kernels{
 		template< typename DataStorage> 
 		struct Color_k : public Kernel<DataStorage, 2, Color_k<DataStorage>>{
 
-			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
+			static void withBonduaries (DataStorage& data, int i, int j, int t) {
+				getElem(data, i, j, t+1) = t%std::numeric_limits<typename DataStorage::ElementType>::max();
+			}
+			static void withoutBonduaries (DataStorage& data, int i, int j, int t) {
 				getElem(data, i, j, t+1) = t%std::numeric_limits<typename DataStorage::ElementType>::max();
 			}
 
@@ -69,13 +94,32 @@ namespace example_kernels{
 
 			static const float Kcoeff[3][3];
 
-			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
+			static void withBonduaries (DataStorage& data, int i, int j, int t) {
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
 
 				for (unsigned x = MAX(0, ((int)i)-1); x <= MIN(getW(data)-1, i+1); ++x){
 					for (unsigned y = MAX(0, ((int)j)-1); y <= MIN(j+1, getH(data)-1); ++y){	
+						
+						int ki =  x-i+1;
+						int kj =  y-j+1;
+
+						auto e = getElem(data, x, y, t);
+						sum += e * Kcoeff[ki][kj];
+					}
+				}
+				
+				getElem(data, i, j, t+1) = sum;
+			}
+
+			static void withoutBonduaries (DataStorage& data, int i, int j, int t) {
+
+				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
+				double sum = 0.0;
+
+				for (unsigned x = i-1; x <= i+1; ++x){
+					for (unsigned y = j-1; y <= j+1; ++y){	
 						
 						int ki =  x-i+1;
 						int kj =  y-j+1;
@@ -101,13 +145,32 @@ namespace example_kernels{
 
 			static const float Kcoeff[5][5];
 
-			static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t) {
+			static void withBonduaries (DataStorage& data, int i, int j, int t) {
 
 				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
 				double sum = 0.0;
 
-				for (unsigned x = MAX(0, ((int)i)-1, ((int)i)-2); x <= MIN(getW(data)-1, i+1, i+2); ++x){
+                for (unsigned x = MAX(0, ((int)i)-1, ((int)i)-2); x <= MIN(getW(data)-1, i+1, i+2); ++x){
 					for (unsigned y = MAX(0, ((int)j)-1, ((int)j)-2); y <= MIN(j+2, j+1, getH(data)-1); ++y){	
+						
+						int ki =  x-i+1;
+						int kj =  y-j+1;
+
+						auto e = getElem(data, x, y, t);
+						sum += e * Kcoeff[ki][kj];
+					}
+				}
+				
+				getElem(data, i, j, t+1) = sum;
+			}
+
+			static void withoutBonduaries (DataStorage& data, int i, int j, int t) {
+
+				//std::cout << "(" << getW(data) << "," << getH(data) << ")" << std::endl;
+				double sum = 0.0;
+
+				for (unsigned x = i-2; x <= i+2; ++x){
+					for (unsigned y = j-2; y <= j+2; ++y){	
 						
 						int ki =  x-i+1;
 						int kj =  y-j+1;

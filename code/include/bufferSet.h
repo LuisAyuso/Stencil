@@ -319,6 +319,7 @@ namespace stencil{
 		FOR_DIMENSION(1) getElem(BufferSet2<E,D>& b, unsigned i, unsigned t){
 			assert(i<b.dimension_sizes[0] && "i out of range");
 			assert(b.buffer_size && "accessing invalidated buffer");
+
 			if (t%2 == 0) return b.storage[i].first;
 			else		  return b.storage[i].second;
 		}

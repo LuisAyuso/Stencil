@@ -24,6 +24,15 @@ namespace example_kernels{
 				getElem(data, i, (t+1)%2) = (left + right + me) / 3.0;
 			}
 
+			static void withoutBonduaries (DataStorage& data, int i, int t) {
+
+				auto left  = getElem(data, i, t%2);
+				auto me    = getElem(data, i, t%2);
+				auto right = getElem(data, i, t%2);
+
+				getElem(data, i, (t+1)%2) = (left + right + me) / 3.0;
+			}
+
 			static const unsigned int neighbours = 1;
 		};
 

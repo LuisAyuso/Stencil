@@ -279,11 +279,11 @@ namespace stencil{
 
 			auto left = hyp;
 			left.scopes[Dim].b = left.scopes[Dim].a;
-			//left.step ++;
+			left.scopes[Dim].db= Slope;
 	
 			auto right = hyp;
 			right.scopes[Dim].a = right.scopes[Dim].b;
-			//right.step ++;
+			right.scopes[Dim].da= -Slope;
 
 			return {{central, left, right}};
 		}

@@ -107,10 +107,14 @@ namespace {
 	template< typename DataStorage> 
 	struct Translate_k : public Kernel<DataStorage, 2, Translate_k<DataStorage>>{
 
-		static void withBonduaries (DataStorage& data, unsigned i, unsigned j, unsigned t){
+		static void withBonduaries (DataStorage& data, int i, int j, unsigned t){
 			if 		(0> (int)i-1)	getElem(data, i, j, t+1) = 0;
 			else if (0> (int)j-1)	getElem(data, i, j, t+1) = 0;
 			else 					getElem(data, i, j, t+1) = getElem(data, i-1, j-1, t);
+		}
+		static void withoutBonduaries (DataStorage& data, int i, int j, unsigned t){
+			std::cout << "yo:" << i << "," << j << std::endl;
+			getElem(data, i, j, t+1) = getElem(data, i-1, j-1, t);
 		}
 
 		static const unsigned int neighbours = 1;
@@ -333,9 +337,8 @@ namespace {
 	struct Avg_4D_k : public Kernel<DataStorage, 4, Avg_4D_k<DataStorage>>{
 
 		static void withBonduaries (DataStorage& data, int i, int j, int k, int w, unsigned t){
+			const double fac = 2.0;
 
-			double fac = 2.0;
-	
 			if (i == 0 || i == getW(data)-1) { getElem(data, i, j, k, w, t+1) =  getElem (data, i, j, k, w, t); return; }
 			if (j == 0 || j == getH(data)-1) { getElem(data, i, j, k, w, t+1) =  getElem (data, i, j, k, w, t); return; }
 			if (k == 0 || k == getD(data)-1) { getElem(data, i, j, k, w, t+1) =  getElem (data, i, j, k, w, t); return; }
@@ -351,10 +354,20 @@ namespace {
 
 		//	std::cout << getElem(data, i, j, k, t+1)  << ":" << getElem(data, i, j, k, t) <<  "@ (" << i << "," << j << "," << k << ")" << std::endl;
 		}
+		static void withoutBonduaries (DataStorage& data, int i, int j, int k, int w, unsigned t){
+			const double fac = 2.0;
 
-		//std::pair<int,int> getSlope(unsigned dimension) const{
-		//	return {1,-1};
-		//}
+			getElem(data, i, j, k, w, t+1) = 
+					getElem (data, i, j, k + 1, w, t) +
+					getElem (data, i, j, k - 1, w, t) +
+					getElem (data, i, j + 1, k, w, t) +
+					getElem (data, i, j - 1, k, w, t) +
+					getElem (data, i + 1, j, k, w, t) +
+					getElem (data, i - 1, j, k, w, t)
+					- 6.0 * getElem (data, i, j, k, w, t) / (fac*fac);
+
+		//	std::cout << getElem(data, i, j, k, t+1)  << ":" << getElem(data, i, j, k, t) <<  "@ (" << i << "," << j << "," << k << ")" << std::endl;
+		}
 
 		static const unsigned int neighbours = 1;
 	};
