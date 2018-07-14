@@ -9,6 +9,8 @@
 
 #include "hyperspace.h"
 
+#include <string.h>
+
 namespace stencil{
 	
 
@@ -117,24 +119,24 @@ namespace stencil{
 			for (const auto& i : dimension_sizes) out << i << ",";
 			out << "](" << buffer_size<< "elems)x" << copies;
 
-//			for (int c=0; c < Copies; ++c){
-//				out << " {\n";
-//				for ( auto i = 0; i< buffer_size; ++i) {
-//					
-//					if(i!=0){
-//						auto x = i;
-//						for (auto d = 0; d< dimensions; ++d) {
-//							if ((x % dimension_sizes[d]) == 0) {
-//								std::cout << "\n";
-//								x = x/dimension_sizes[d];
-//							}	
-//							else break;
-//						}
-//					}
-//					out << storage[c*buffer_size + i] << ",";
-//				}
-//				out << "\n}";
-//			}
+			for (int c=0; c < Copies; ++c){
+				out << " {\n";
+				for ( auto i = 0; i< buffer_size; ++i) {
+					
+					if(i!=0){
+						auto x = i;
+						for (auto d = 0; d< dimensions; ++d) {
+							if ((x % dimension_sizes[d]) == 0) {
+								std::cout << "\n";
+								x = x/dimension_sizes[d];
+							}	
+							else break;
+						}
+					}
+					out << storage[c*buffer_size + i] << ",";
+				}
+				out << "\n}";
+			}
 
 			return out;
 		}
@@ -176,9 +178,10 @@ namespace stencil{
 		
 		#undef FOR_DIMENSION
 
+
 		#define FROM_DIMENSION(N) \
 			template<typename E, size_t D, unsigned C>\
-			inline typename std::enable_if< is_ge<D, N>::value, int>::type
+			inline typename std::enable_if< is_ge<D, N>::value, const int>::type
 
 		FROM_DIMENSION(1) getW(const BufferSet<E,D,C>& b){
 			return b.dimension_sizes[0];
@@ -316,6 +319,7 @@ namespace stencil{
 		FOR_DIMENSION(1) getElem(BufferSet2<E,D>& b, unsigned i, unsigned t){
 			assert(i<b.dimension_sizes[0] && "i out of range");
 			assert(b.buffer_size && "accessing invalidated buffer");
+
 			if (t%2 == 0) return b.storage[i].first;
 			else		  return b.storage[i].second;
 		}

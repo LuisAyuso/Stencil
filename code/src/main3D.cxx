@@ -7,10 +7,17 @@
 #include "kernel.h"
 #include "kernels_3D.h"
 #include "bufferSet.h"
-#include "rec_stencil_inverted_dims.h"
-//#include "rec_stencil_multiple_splits.h"
 
-#include "timer.h" 
+//#include "rec_stencil_inverted_dims.h"
+//#include "rec_stencil_inverted_dims_by_dim.h"
+//#include "rec_stencil_multiple_splits.h"
+//#include "rec_stencil_multiple_splits_by_dimension.h"
+
+#include "new_rec_stencil.h"
+
+#include "timer.h"
+#include "tools/instrument.h" 
+ 
 
 using namespace stencil;
 
@@ -131,9 +138,9 @@ int main(int argc, char *argv[]) {
 
 	// ~~~~~~~~~~~~~~~~~~  create multidimensional buffer for flip-flop ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	ImageSpace recBuffer( {size, size, size}, data);
-	ImageSpace iteBuffer( {size, size, size}, data);
-	ImageSpace invBuffer( {size, size, size}, data);
+	ImageSpace recBuffer( {{size, size, size}}, data);
+	ImageSpace iteBuffer( {{size, size, size}}, data);
+	ImageSpace invBuffer( {{size, size, size}}, data);
 
 	std::cout << " ~~~~~~~~~~~~~ GO ~~~~~~~~~~~~~~~~~~~" <<std::endl;
 
@@ -141,40 +148,42 @@ int main(int argc, char *argv[]) {
 	
 	using KernelType = example_kernels::Avg_3D_k<ImageSpace>;
 
-	KernelType kernel;
-
 	// ~~~~~~~~~~~~~~~~ RUN ~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if (REC || ALL){
-		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, kernel, timeSteps);
+		auto t = time_call(recursive_stencil<ImageSpace, KernelType>, recBuffer, timeSteps);
 		std::cout << "recursive: " << t << "ms" <<std::endl;
 	}
 
-//	if (IT || ALL){
-//		auto it = [&] (){
-//			for (unsigned t = 0; t < timeSteps; ++t){
-//				P_FOR ( i, 0, getW(iteBuffer), 1, {
-//		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
-//		 				for (unsigned k = 0; k < getD(iteBuffer); ++k){
-//							kernel(iteBuffer, i, j, k, t);
-//						}
-//					}
-//				});
-//			}
-//		};
-//
-//		auto t = time_call(it);
-//		std::cout << "iterative: " << t <<"ms" << std::endl;
-//	}
+	if (IT || ALL){
+		auto it = [&] (){
+			for (unsigned t = 0; t < timeSteps; ++t){
+				P_FOR ( i, 0, getW(iteBuffer), 1, {
+					LOOP_INSTRUMENT(i, t);
+		 			for (unsigned j = 0; j < getH(iteBuffer); ++j){
+		 				for (unsigned k = 0; k < getD(iteBuffer); ++k){
+							KernelType::withBonduaries(iteBuffer, i, j, k, t);
+						}
+					}
+					END_INSTUMENT;
+				});
+			}
+		};
+
+		auto t = time_call(it);
+		std::cout << "iterative: " << t <<"ms" << std::endl;
+	}
 
 	if (INV || ALL){
 		auto it = [&] (){
 			for (unsigned t = 0; t < timeSteps; ++t){
 				P_FOR ( k, 0, getD(iteBuffer), 1, {
+					LOOP_INSTRUMENT(k, t);
 					for (unsigned j = 0; j < getH(iteBuffer); ++j){
 						for (unsigned i = 0; i < getW(iteBuffer); ++i){
-							kernel(invBuffer, i, j, k, t);
+							KernelType::withBonduaries(invBuffer, i, j, k, t);
 						}
 					}
+					END_INSTUMENT;
 				});
 			}
 		};
@@ -185,8 +194,8 @@ int main(int argc, char *argv[]) {
 
 	if (ALL && VALIDATE){
 		if (recBuffer != invBuffer) std::cout << "VALIDATION FAILED" << std::endl;
-	//	else if (invBuffer != iteBuffer) std::cout << "VALIDATION FAILED" << std::endl;
-	//	else if (iteBuffer != recBuffer) std::cout << "VALIDATION FAILED" << std::endl;
+		else if (invBuffer != iteBuffer) std::cout << "VALIDATION FAILED" << std::endl;
+		else if (iteBuffer != recBuffer) std::cout << "VALIDATION FAILED" << std::endl;
 		else std::cout << "VALIDATION OK" << std::endl;
 	}
 

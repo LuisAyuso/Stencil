@@ -1,0 +1,3 @@
+repository='external project URL'
+module='http://cimg.eu/files/CImg_latest.zip'
+tag=''

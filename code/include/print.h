@@ -5,8 +5,8 @@
 #include <iostream>
 
 namespace utils {
-class Printable;
-class VirtualPrintable;
+struct Printable;
+struct VirtualPrintable;
 }
 
 namespace std {

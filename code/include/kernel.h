@@ -20,36 +20,44 @@ namespace stencil{
 	template <typename Data, unsigned Dimensions, typename Parent>
 	struct Kernel{
 
-		// FIXME: i just found that this is actually never used, since the recusive algorithm is instanciated for the specific routine
-		// 			this is not bad, i leave here the kernel anyway to model how it should look like
-
-		#define FOR_DIMENSION(N) \
-			std::enable_if< is_eq<Dimensions, N>::value, void>
-
-		FOR_DIMENSION(1) operator() (Data& data, int i, int t) const{
-			static_cast<Parent*>(this)->operator() (data, i, t);
-		}
-		FOR_DIMENSION(2) operator() (Data& data, int i, int j, int t) const{
-			static_cast<Parent*>(this)->operator() (data, i, j, t);
-		}
-		FOR_DIMENSION(3) operator() (Data& data, int i, int j, int k, int t) const{
-			static_cast<Parent*>(this)->operator() (data, i, j, k, t);
-		}
-		FOR_DIMENSION(4) operator() (Data& data, int i, int j, int k, int w, int t) const{
-			static_cast<Parent*>(this)->operator() (data, i, j, k, w, t);
-		}
-
-		#undef FOR_DIMENSION
-		
-		std::pair<int,int> getSlope(unsigned dimension)const {
-			return static_cast<Parent*>(this)->getSlope(dimension);
-		}
-
-
 		static const unsigned dimensions = Dimensions;
-
 	};
 
+
+	#define FOR_DIMENSION(N) \
+	template <bool WithBonduaries, typename KernelType, typename DataStorage> \
+			inline typename std::enable_if< is_eq<KernelType::dimensions, N>::value, void>::type
+
+		FOR_DIMENSION(1)  solve (DataStorage& data, int x, int t){
+			static_assert(sizeof(KernelType) == 1, "no fields allowed in kernel type");
+			static_assert( std::is_function<decltype(KernelType::withoutBonduaries)>::value, "kernel has no version without bounduaries");
+			if (WithBonduaries) KernelType::withBonduaries(data, x, t);
+			else				KernelType::withoutBonduaries(data, x, t);
+		}
+
+		FOR_DIMENSION(2)  solve (DataStorage& data, int x, int y, int t){
+			static_assert(sizeof(KernelType) == 1, "no fields allowed in kernel type");
+			static_assert( std::is_function<decltype(KernelType::withoutBonduaries)>::value, "kernel has no version without bounduaries");
+			if (WithBonduaries) KernelType::withBonduaries(data, x, y, t);
+			else				KernelType::withoutBonduaries(data, x, y ,t);
+		}
+
+		FOR_DIMENSION(3)  solve (DataStorage& data, int x, int y, int z, int t){
+			static_assert(sizeof(KernelType) == 1, "no fields allowed in kernel type");
+			static_assert( std::is_function<decltype(KernelType::withoutBonduaries)>::value, "kernel has no version without bounduaries");
+			if (WithBonduaries) KernelType::withBonduaries(data, x, y, z, t);
+			else				KernelType::withoutBonduaries(data, x, y, z, t);
+		}
+
+		FOR_DIMENSION(4)  solve (DataStorage& data, int x, int y, int z, int w, int t){
+			static_assert(sizeof(KernelType) == 1, "no fields allowed in kernel type");
+			static_assert( std::is_function<decltype(KernelType::withoutBonduaries)>::value, "kernel has no version without bounduaries");
+
+			if (WithBonduaries) KernelType::withBonduaries(data, x, y, z, w, t);
+			else				KernelType::withoutBonduaries(data, x, y, z, w, t);
+		}
+
+	#undef FOR_DIMENSION
 
 
 } // stencil namespace

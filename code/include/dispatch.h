@@ -25,17 +25,9 @@
 #if !defined(_OPENMP) && ! defined(CILK) && !defined(CXX_ASYNC) && !defined(INSIEME_RT)
 # define SEQUENTIAL 1
 #else
-
-// ~~~~~~~~~~~~~~~~~~~~~~~ SHARED TO ALL PARALLEL VERSIONS ~~~~~~~~~~~~~~~~~
-
-	#include <thread>
-	#include <atomic>
-
-	#define THREAD_CUTOFF 2
-
-	static auto max_threads = std::thread::hardware_concurrency() * THREAD_CUTOFF;
-	std::atomic_long current_threads (0);
-
+// common to all parallel versions
+# define THREAD_CUTOFF 2
+# include <atomic>
 #endif
 
 
@@ -49,9 +41,12 @@
 // ~~~~~~~~~~~~~~~~~~~~~ SEQUENTIAL ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef SEQUENTIAL
 
+	namespace {
+		const static auto MAX_THREADS = 1;
+	}
+
 	#define PARALLEL_CTX(STMT) \
 		STMT
-		
 
     #define SPAWN(taskName, f, ...) \
         f(__VA_ARGS__);  \
@@ -72,6 +67,15 @@
 #ifdef _OPENMP
 
 	#include <omp.h>
+
+	// dummy promise for future values, sync is done based on threadgroup
+	typedef int PROMISE;
+
+	namespace {
+		const static auto MAX_THREADS = omp_get_thread_limit();
+		static auto max_threads = MAX_THREADS * THREAD_CUTOFF;
+		std::atomic_long current_threads (0);
+	}
     
 	#define PARALLEL_CTX(STMT) \
 		_Pragma( "omp parallel" ) \
@@ -80,11 +84,9 @@
 	
     #define SPAWN(taskName, f, ...) \
         auto MAKE_UNIQUE(wrap) = [&] () { current_threads++; f(__VA_ARGS__); current_threads--; }; \
-		if(current_threads  < max_threads) {\
-			_Pragma( "omp task untied") \
-			MAKE_UNIQUE(wrap)(); } \
-		else f(__VA_ARGS__); \
-		int taskName;
+		_Pragma( "omp task untied ") \
+		MAKE_UNIQUE(wrap)(); \
+		PROMISE taskName;
 
 	#define SYNC(...) \
 		_Pragma( "omp taskwait ")
@@ -94,8 +96,6 @@
 		_Pragma( "  omp for ") \
 		for (auto it = B; it < E; it += S)   STMT
 
-	// dummy promise for future values, sync is done based on threadgroup
-	typedef int PROMISE;
 
 #endif
 
@@ -110,7 +110,13 @@
 #endif
 
 	#include <cilk/cilk.h>
+	#include <cilk/cilk_api.h>
 
+	namespace {
+		const static auto MAX_THREADS = __cilkrts_get_nworkers();
+		static auto max_threads = MAX_THREADS * THREAD_CUTOFF;
+		std::atomic_long current_threads (0);
+	}
 
 	#define PARALLEL_CTX(STMT) \
 		STMT
@@ -140,118 +146,122 @@
 	#include <thread>
 	#include <mutex>
 
+	#include <thread>
 
 	namespace {
 
+		const static auto MAX_THREADS = std::thread::hardware_concurrency();
+		static auto max_threads = MAX_THREADS * THREAD_CUTOFF;
+		std::atomic_long current_threads (0);
 
-		class Thread_Pool{
+	//	class Thread_Pool{
 
-			typedef std::pair<std::function<void(void)>, std::promise<void>> task_t;
+	//		typedef std::pair<std::function<void(void)>, std::promise<void>> task_t;
 
-			struct Thread_queue{
+	//		struct Thread_queue{
 
-				std::vector<task_t> task_queue;
-				std::mutex queue_lock;
-				int next_task;
-				bool go;
+	//			std::vector<task_t> task_queue;
+	//			std::mutex queue_lock;
+	//			int next_task;
+	//			bool go;
 
-				Thread_queue()
-				: next_task(0), go(true) {}
-			};
+	//			Thread_queue()
+	//			: next_task(0), go(true) {}
+	//		};
 
-			const int num_threads;
-			std::vector<Thread_queue> thread_queues;
-			std::atomic_long next_thread;
-			std::vector<std::thread> thread_pids;
-			bool running;
-
-
-			static void run (Thread_queue& queue){
-
-				auto task_available = [&] () { 
-					queue.queue_lock.lock();
-					auto nelem =  queue.task_queue.size();
-					queue.queue_lock.unlock();
-					return queue.next_task < nelem;
-				};
-
-				while (queue.go){
-
-					while(task_available()){
-
-						std::cout << "execute: " << queue.next_task << " of " << queue.task_queue.size() << std::endl;
-
-						// execute task
-						queue.task_queue[queue.next_task].first();
-						// make future ready
-						queue.task_queue[queue.next_task].second.set_value();
-						queue.next_task ++;
-
-					}
-			//		std::cout << "list empty" << std::endl;
-
-					std::this_thread::yield();
-				}
-				
-			}
+	//		const int num_threads;
+	//		std::vector<Thread_queue> thread_queues;
+	//		std::atomic_long next_thread;
+	//		std::vector<std::thread> thread_pids;
+	//		bool running;
 
 
-			Thread_Pool()
-			: num_threads(std::thread::hardware_concurrency()), thread_queues(num_threads), next_thread(0), thread_pids(num_threads), running(false)
-			{ 
-			}
+	//		static void run (Thread_queue& queue){
 
-			void _init(){
-				for (int i =0; i < num_threads; ++i){
+	//			auto task_available = [&] () { 
+	//				queue.queue_lock.lock();
+	//				auto nelem =  queue.task_queue.size();
+	//				queue.queue_lock.unlock();
+	//				return queue.next_task < nelem;
+	//			};
 
-					thread_queues[i].go = true;
-					thread_queues[i].next_task = 0;
+	//			while (queue.go){
 
-					std::thread th (Thread_Pool::run, std::ref(thread_queues[i]));
-					thread_pids.emplace(thread_pids.begin()+i, std::move(th) );
-				}
-				running = true;
-			}
-			void _shutdown(){
-				for (int i =0; i < num_threads; ++i){
-					thread_queues[i].go = false;
-				}
-				for (int i =0; i < num_threads; ++i){
-					thread_pids[i].join();
-					thread_queues[i].task_queue.clear();
-				}
+	//				while(task_available()){
 
-				running = false;
-			}
+	//					std::cout << "execute: " << queue.next_task << " of " << queue.task_queue.size() << std::endl;
+
+	//					// execute task
+	//					queue.task_queue[queue.next_task].first();
+	//					// make future ready
+	//					queue.task_queue[queue.next_task].second.set_value();
+	//					queue.next_task ++;
+
+	//				}
+	//		//		std::cout << "list empty" << std::endl;
+
+	//				std::this_thread::yield();
+	//			}
+	//			
+	//		}
 
 
-			std::future<void> _add_task(std::function<void(void)> f) {
-				int current = next_thread.fetch_add(1) % num_threads;
-				thread_queues[current].queue_lock.lock();
-				thread_queues[current].task_queue.push_back({f, std::promise<void>()});
-				auto fut = thread_queues[current].task_queue.back().second.get_future();
-				thread_queues[current].queue_lock.unlock();
-				std::cout << "task added to: " << current<<std::endl;
-				return fut;
-			}
+	//		Thread_Pool()
+	//		: num_threads(std::thread::hardware_concurrency()), thread_queues(num_threads), next_thread(0), thread_pids(num_threads), running(false)
+	//		{ 
+	//		}
 
-		public:
+	//		void _init(){
+	//			for (int i =0; i < num_threads; ++i){
 
-			static Thread_Pool& get_instance(){
-				static Thread_Pool inst;
-				if (!inst.running) inst._init();
-				return inst;
-			}
+	//				thread_queues[i].go = true;
+	//				thread_queues[i].next_task = 0;
 
-			static std::future<void> add_task(std::function<void(void)> f) {
-				return get_instance()._add_task(f);
-			}
+	//				std::thread th (Thread_Pool::run, std::ref(thread_queues[i]));
+	//				thread_pids.emplace(thread_pids.begin()+i, std::move(th) );
+	//			}
+	//			running = true;
+	//		}
+	//		void _shutdown(){
+	//			for (int i =0; i < num_threads; ++i){
+	//				thread_queues[i].go = false;
+	//			}
+	//			for (int i =0; i < num_threads; ++i){
+	//				thread_pids[i].join();
+	//				thread_queues[i].task_queue.clear();
+	//			}
 
-			static void shutdown() {
-				get_instance()._shutdown();
-			}
+	//			running = false;
+	//		}
 
-		};
+
+	//		std::future<void> _add_task(std::function<void(void)> f) {
+	//			int current = next_thread.fetch_add(1) % num_threads;
+	//			thread_queues[current].queue_lock.lock();
+	//			thread_queues[current].task_queue.push_back({f, std::promise<void>()});
+	//			auto fut = thread_queues[current].task_queue.back().second.get_future();
+	//			thread_queues[current].queue_lock.unlock();
+	//			std::cout << "task added to: " << current<<std::endl;
+	//			return fut;
+	//		}
+
+	//	public:
+
+	//		static Thread_Pool& get_instance(){
+	//			static Thread_Pool inst;
+	//			if (!inst.running) inst._init();
+	//			return inst;
+	//		}
+
+	//		static std::future<void> add_task(std::function<void(void)> f) {
+	//			return get_instance()._add_task(f);
+	//		}
+
+	//		static void shutdown() {
+	//			get_instance()._shutdown();
+	//		}
+
+	//	};
 
 
 		std::future<void> my_async(std::function<void(void)> f){
@@ -292,6 +302,7 @@
 		std::future<void> taskName = my_async(wrap);
 
 namespace {
+
 
 	template <typename ...ARGS>
 	void waitTasks (ARGS& ... args){
@@ -355,7 +366,12 @@ namespace {
 //	// initialize insieme RT
 //	RT_INIT dummy_init;
 
-
+	#include <thread>
+	namespace {
+		const static auto MAX_THREADS = std::thread::hardware_concurrency();
+		static auto max_threads =  MAX_THREADS * THREAD_CUTOFF;
+		std::atomic_long current_threads (0);
+	}
 
 	#define PARALLEL_CTX(STMT) \
 		STMT

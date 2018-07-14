@@ -7,5 +7,9 @@ tags
 .Rhistory
 icc
 icc-debug
-
-
+R/
+*-release/
+*-debug/
+build*
+.DS_Store
+xcode

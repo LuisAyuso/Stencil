@@ -81,7 +81,7 @@ TEST(Kernel, Operator){
 }
 
 
-
+/*
 TEST(Kernel, Gaussian_Blur){
 
 	using namespace example_kernels;
@@ -151,4 +151,32 @@ TEST(Kernel, Gaussian_Blur){
 			}
 		}
 	}
+}*/
+
+TEST(Kernel, SolveRoutine){
+
+	{
+		typedef std::array<int, 10> Data;
+
+		struct TestKernel : public Kernel<Data, 1, TestKernel>{
+
+			static void withBonduaries (Data& data, unsigned i, unsigned t){
+				data[i] = 15;
+			}
+			static void withoutBonduaries (Data& data, unsigned i, unsigned t){
+				data[i] = 25;
+			}
+
+		};
+
+		Data data;
+		solve<true,TestKernel> (data, 0, 0);
+
+		EXPECT_EQ(data[0], 15);
+
+		solve<false,TestKernel> (data, 1, 0);
+		EXPECT_EQ(data[1], 25);
+	}
 }
+
+

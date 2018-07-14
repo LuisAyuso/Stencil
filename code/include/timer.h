@@ -4,11 +4,14 @@
 #include <iomanip>
 #include <ctime>
 #include <chrono>
-#include <functional>
+
+//#include <functional>
+//#include <time.h>
  
 template<typename F, typename... ARGS>
 double time_call (F f, ARGS& ... args){
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 	
 	f(args...);
 
